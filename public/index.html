@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discord Message Forwarder Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+          <i data-lucide="forward" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+            Discord Forwarder
+            <span id="bot-status-badge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Connecting...
+            </span>
+          </h1>
+          <p class="text-xs text-slate-400">Message copying & real-time channel sync</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <a href="/exporthtml" class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 text-xs font-medium rounded-lg border border-indigo-500/30 transition" title="Export & Forward HTML Sources">
+          <i data-lucide="file-code" class="w-4 h-4 text-indigo-400"></i>
+          /exporthtml
+        </a>
+        <button id="register-commands-btn-header" onclick="handleRegisterCommands()" class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition" title="Register Slash Commands with Discord">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+          Register Commands
+        </button>
+        <button id="refresh-btn" onclick="fetchDashboardData()" class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition" title="Refresh">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+        <a id="bot-invite-link" href="#" target="_blank" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition shadow-sm shadow-indigo-900/50">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          Invite Bot
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Config Warning Banner if TOKEN missing -->
+    <div id="token-warning-banner" class="hidden bg-amber-950/40 border border-amber-500/30 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-start space-x-3">
+        <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg mt-0.5 sm:mt-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-amber-200">Bot Token Not Configured</h3>
+          <p class="text-sm text-amber-300/80 mt-0.5">Please add your Discord Bot Token (<code class="bg-amber-900/40 px-1.5 py-0.5 rounded text-amber-200 text-xs">TOKEN</code>) in environment variables to connect to Discord.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Bot Status</span>
+          <i data-lucide="bot" class="w-5 h-5 text-indigo-400"></i>
+        </div>
+        <div class="mt-3 flex items-baseline justify-between">
+          <div id="stat-bot-name" class="text-lg font-bold text-slate-100 truncate max-w-[140px]">Offline</div>
+          <span id="stat-prefix" class="text-xs text-slate-400 font-mono">Prefix: /</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">24/7 Uptime & Ping</span>
+          <i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i>
+        </div>
+        <div class="mt-3 flex items-baseline justify-between">
+          <div id="stat-uptime" class="text-lg font-bold text-slate-100 font-mono">00m 00s</div>
+          <span id="stat-ping" class="text-xs text-emerald-400 font-mono">0 ms</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Connected Servers</span>
+          <i data-lucide="server" class="w-5 h-5 text-cyan-400"></i>
+        </div>
+        <div class="mt-3 flex items-baseline justify-between">
+          <div id="stat-servers-count" class="text-2xl font-bold text-slate-100">0</div>
+          <span class="text-xs text-slate-400">Guilds</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Forward Rules</span>
+          <i data-lucide="git-merge" class="w-5 h-5 text-amber-400"></i>
+        </div>
+        <div class="mt-3 flex items-baseline justify-between">
+          <div id="stat-rules-count" class="text-2xl font-bold text-slate-100">0</div>
+          <span class="text-xs text-slate-400">Channels</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Forwarded Messages</span>
+          <i data-lucide="send" class="w-5 h-5 text-purple-400"></i>
+        </div>
+        <div class="mt-3 flex items-baseline justify-between">
+          <div id="stat-logs-count" class="text-2xl font-bold text-slate-100">0</div>
+          <span class="text-xs text-slate-400">Events</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="border-b border-slate-800 flex space-x-6 overflow-x-auto">
+      <button onclick="switchTab('rules')" id="tab-rules" class="tab-btn pb-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="repeat" class="w-4 h-4"></i> Forward Rules
+      </button>
+      <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="image" class="w-4 h-4 text-cyan-400"></i> AI Photo Studio & Gallery
+      </button>
+      <button onclick="switchTab('cloner')" id="tab-cloner" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="copy" class="w-4 h-4 text-cyan-400"></i> Server Cloner (/clone)
+      </button>
+      <button onclick="switchTab('security')" id="tab-security" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="shield-alert" class="w-4 h-4 text-cyan-400"></i> Anti-Nuke & Security Shields
+      </button>
+      <button onclick="switchTab('uptime')" id="tab-uptime" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> 24/7 Keep-Alive & Health
+      </button>
+      <button onclick="switchTab('servers')" id="tab-servers" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i> Bot Servers & Channels
+      </button>
+      <button onclick="switchTab('external')" id="tab-external" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="key" class="w-4 h-4 text-amber-400"></i> External Servers & User Token
+      </button>
+      <button onclick="switchTab('importer')" id="tab-importer" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Web Importer & Webhooks
+      </button>
+      <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="activity" class="w-4 h-4"></i> Live Activity Logs
+      </button>
+      <button onclick="switchTab('help')" id="tab-help" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="help-circle" class="w-4 h-4"></i> Commands & Usage
+      </button>
+    </div>
+
+    <!-- TAB: AI Photo Studio & Gallery -->
+    <div id="view-ai" class="tab-content hidden space-y-6">
+      <!-- Overview Header -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-xl border border-cyan-500/30">
+              <i data-lucide="image" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+                AI Photo Studio & Gallery
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Studio Active</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Generate high-fidelity artwork, transform & edit visual parameters, update photo titles, and change scene elements</p>
+            </div>
+          </div>
+          <button onclick="refreshPhotosGallery()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition flex items-center gap-2 self-start sm:self-center shadow-sm">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Photo Gallery
+          </button>
+        </div>
+
+        <!-- Capability Status Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Photo Art Engine</div>
+            <div class="text-lg font-bold text-cyan-400 mt-1 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span> Gemini 3.1 & Flux Diffusion
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Multi-tier AI rendering pipeline</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Scene Transformer & Renamer</div>
+            <div class="text-lg font-bold text-purple-400 mt-1">AI Inpainting & Edits</div>
+            <div class="text-[11px] text-slate-500 mt-1">Update titles, modify details & tune filters</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Photos In Gallery</div>
+            <div id="stat-total-photos" class="text-lg font-bold text-amber-400 mt-1">0 Photos</div>
+            <div class="text-[11px] text-slate-500 mt-1">Persisted in gallery storage</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHOTO STUDIO & GALLERY -->
+      <div id="studio-view-photos" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left: Photo Generator & Prompt Controls (5 cols) -->
+          <div class="lg:col-span-5 bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+                <i data-lucide="wand-2" class="w-4 h-4 text-cyan-400"></i> Generate New Photo
+              </h3>
+              <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded">AI Art Studio</span>
+            </div>
+
+            <!-- Prompt Input -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-medium text-slate-300">Prompt Description</label>
+              <textarea id="photo-prompt-input" rows="3" placeholder="e.g. Cyberpunk neon samurai standing in rain at midnight with glowing katanas..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-sans resize-none"></textarea>
+            </div>
+
+            <!-- Style and Aspect Ratio -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Visual Style</label>
+                <select id="photo-style-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                  <option value="Digital Art">Digital Art</option>
+                  <option value="Cyberpunk Neon">Cyberpunk Neon</option>
+                  <option value="Cinematic Landscape">Cinematic Landscape</option>
+                  <option value="Anime / Manga">Anime / Manga</option>
+                  <option value="3D Vector Render">3D Vector Render</option>
+                  <option value="Pixel Art">Pixel Art</option>
+                  <option value="Watercolor Dream">Watercolor Dream</option>
+                  <option value="Retro Synthwave">Retro Synthwave</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Aspect Ratio</label>
+                <select id="photo-ratio-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                  <option value="1:1">1:1 Square</option>
+                  <option value="16:9">16:9 Landscape</option>
+                  <option value="9:16">9:16 Portrait</option>
+                  <option value="4:3">4:3 Standard</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Optional Title -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-medium text-slate-400">Photo Name / Title (Optional)</label>
+              <input type="text" id="photo-name-input" placeholder="e.g. Neon Horizon 2099" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
+            </div>
+
+            <!-- Quick Style Presets -->
+            <div class="space-y-1.5">
+              <span class="text-[11px] text-slate-400 font-medium">Quick Ideas & Themes:</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="insertPhotoPreset('cyberpunk')" class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[11px] text-cyan-300 transition">🌆 Cyber City</button>
+                <button onclick="insertPhotoPreset('galaxy')" class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[11px] text-purple-300 transition">🌌 Cosmic Nebula</button>
+                <button onclick="insertPhotoPreset('dragon')" class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[11px] text-amber-300 transition">🐉 Emerald Dragon</button>
+                <button onclick="insertPhotoPreset('synthwave')" class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[11px] text-pink-300 transition">🌴 80s Sunset Grid</button>
+              </div>
+            </div>
+
+            <button onclick="generateNewPhoto()" id="btn-generate-photo" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/30">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span id="generate-photo-text">Generate Photo</span>
+            </button>
+          </div>
+
+          <!-- Right: Selected Photo Workbench & AI Transformation Suite (7 cols) -->
+          <div class="lg:col-span-7 bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4 flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+                <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i> Photo Workbench: Modify, Edit & Rename
+              </h3>
+              <span id="selected-photo-id-badge" class="text-[11px] text-slate-500 font-mono">No photo selected</span>
+            </div>
+
+            <div id="photo-workbench-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Photo Preview Container -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center min-h-[260px] relative overflow-hidden group">
+                <div id="workbench-empty-state" class="text-center p-6 text-slate-500 space-y-2">
+                  <i data-lucide="image" class="w-10 h-10 mx-auto text-slate-700"></i>
+                  <p class="text-xs">Select or generate a photo to start transforming & updating</p>
+                </div>
+                <img id="workbench-image" src="" alt="Selected Photo" class="hidden max-h-[280px] w-auto max-w-full rounded-lg object-contain transition duration-200 shadow-md" />
+                <div id="workbench-engine-tag" class="hidden absolute top-2 right-2 text-[10px] bg-slate-900/80 backdrop-blur border border-slate-700 text-cyan-300 px-2 py-0.5 rounded font-mono">AI Render</div>
+              </div>
+
+              <!-- Controls: Rename, AI Change, Filter Adjustments -->
+              <div class="space-y-3 flex flex-col justify-between">
+                <!-- Rename Section -->
+                <div class="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                  <label class="block text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">Update Photo Name</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="workbench-rename-input" placeholder="New Photo Name..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500" />
+                    <button onclick="savePhotoRename()" class="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i> Save
+                    </button>
+                  </div>
+                </div>
+
+                <!-- AI Modification / Change Section -->
+                <div class="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                  <label class="block text-[11px] font-semibold text-purple-300 uppercase tracking-wider">AI Modification & Scene Change</label>
+                  <input type="text" id="workbench-edit-input" placeholder="e.g. Add neon lightning, change to dusk, increase contrast..." class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500" />
+                  <button onclick="applyPhotoAIEdit()" id="btn-apply-ai-edit" class="w-full mt-1.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Apply Changes
+                  </button>
+                </div>
+
+                <!-- Quick Visual Sliders -->
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
+                  <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Hue & Lighting Tune</span>
+                    <button onclick="resetWorkbenchFilters()" class="text-[10px] text-slate-500 hover:text-slate-300">Reset</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[10px] text-slate-400">Brightness: <span id="val-brightness">100%</span></label>
+                      <input type="range" id="slider-brightness" min="50" max="180" value="100" oninput="updatePhotoFilters()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-400">Contrast: <span id="val-contrast">100%</span></label>
+                      <input type="range" id="slider-contrast" min="50" max="180" value="100" oninput="updatePhotoFilters()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-400">Hue Rotate: <span id="val-hue">0°</span></label>
+                      <input type="range" id="slider-hue" min="0" max="360" value="0" oninput="updatePhotoFilters()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-400">Saturate: <span id="val-saturate">100%</span></label>
+                      <input type="range" id="slider-saturate" min="0" max="250" value="100" oninput="updatePhotoFilters()" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons: Download & Delete -->
+                <div class="flex items-center gap-2 pt-1">
+                  <button onclick="downloadActivePhoto()" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition flex items-center justify-center gap-1.5 border border-slate-700">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-cyan-400"></i> Download
+                  </button>
+                  <button onclick="deleteActivePhoto()" class="px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-medium rounded-lg transition flex items-center justify-center gap-1.5 border border-rose-500/30">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery Grid of All Photos -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-cyan-400"></i> Photo Gallery
+            </h3>
+            <span id="gallery-counter-tag" class="text-xs text-slate-400">0 Items</span>
+          </div>
+
+          <div id="photos-gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div class="col-span-full text-center py-10 text-slate-500 text-xs italic">Loading photo studio gallery...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Anti-Nuke & Security Shields -->
+    <div id="view-security" class="tab-content hidden space-y-6">
+      <!-- Security Overview Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-xl border border-cyan-500/30">
+              <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+                Automated Anti-Nuke & Server Shield
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">24/7 Active Protection</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Real-time attack neutralization, anti-delete logger, anti-spam filters & channel auto-restoration</p>
+            </div>
+          </div>
+          <button onclick="triggerAutoSecuritySetup()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition flex items-center gap-2 self-start sm:self-center shadow-sm">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Run Auto-Setup on All Servers
+          </button>
+        </div>
+
+        <!-- Quick Summary Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Shield Engine</div>
+            <div class="text-lg font-bold text-cyan-400 mt-1 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span> Armed & Active
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Intercepts unauthorized deletions</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Auto-Restoration</div>
+            <div class="text-lg font-bold text-emerald-400 mt-1">Instant Recovery</div>
+            <div class="text-[11px] text-slate-500 mt-1">Reconstructs destroyed channels & roles</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Chat & Spam Filter</div>
+            <div class="text-lg font-bold text-purple-400 mt-1">Real-Time Mute</div>
+            <div class="text-[11px] text-slate-500 mt-1">Blocks duplicate spam & raid pings</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Anti-Delete & Ghost Ping</div>
+            <div class="text-lg font-bold text-amber-400 mt-1">Audit Logged</div>
+            <div class="text-[11px] text-slate-500 mt-1">Logs deleted messages to #security-logs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Server Security Status & Active Shields Matrix -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Shields List Card (2 cols) -->
+        <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+              <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i> Active Security Shields
+            </h3>
+            <span class="text-xs text-slate-400">Automatic Default Protection</span>
+          </div>
+
+          <div id="shields-grid-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- Whitelist & Server Selection Card (1 col) -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+              <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i> Trusted Whitelist
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Whitelisted members bypass security rate limits</p>
+          </div>
+
+          <!-- Add Whitelist Form -->
+          <form id="whitelist-form" onsubmit="handleWhitelistAdd(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Target Server</label>
+              <select id="whitelist-guild-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                <option value="">Select a server...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">User ID to Whitelist</label>
+              <input id="whitelist-user-id" type="text" placeholder="e.g. 123456789012345678" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono" required />
+            </div>
+            <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2">
+              <i data-lucide="user-check" class="w-4 h-4"></i> Add to Whitelist
+            </button>
+          </form>
+
+          <!-- Current Whitelist Users List -->
+          <div class="border-t border-slate-800 pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-medium text-slate-400">Whitelisted IDs for Selected Server</label>
+              <button type="button" onclick="handleUnwhitelistAllOthers()" class="text-[11px] text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 transition">
+                <i data-lucide="user-x" class="w-3 h-3"></i> Unwhitelist Others
+              </button>
+            </div>
+            <div id="whitelist-users-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 italic">Select a server above to view whitelist</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: 24/7 Keep-Alive & Health -->
+    <div id="view-uptime" class="tab-content hidden space-y-6">
+      <!-- Live Health & Keep-Alive Status Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+                24/7 Keep-Alive System
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Automated heartbeat, gateway auto-reconnect & HTTP ping endpoints</p>
+            </div>
+          </div>
+          <button onclick="testHealthPing()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition flex items-center gap-2 self-start sm:self-center">
+            <i data-lucide="zap" class="w-4 h-4"></i> Test Health Check Ping
+          </button>
+        </div>
+
+        <!-- Uptime Stats Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Process Continuous Uptime</div>
+            <div id="uptime-detail-clock" class="text-xl font-bold font-mono text-emerald-400 mt-2">0d 00h 00m 00s</div>
+            <div class="text-[11px] text-slate-500 mt-1">Automatic auto-restart protection enabled</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Discord Gateway Latency</div>
+            <div id="uptime-ping-ms" class="text-xl font-bold font-mono text-indigo-400 mt-2">-- ms</div>
+            <div class="text-[11px] text-slate-500 mt-1">WebSocket Auto-Reconnect Supervisor Active</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Internal Self-Ping Heartbeat</div>
+            <div class="text-xl font-bold font-mono text-cyan-400 mt-2">Every 4 Mins</div>
+            <div class="text-[11px] text-slate-500 mt-1">Keeps process warm & active</div>
+          </div>
+        </div>
+
+        <!-- External Health Endpoint Ping Box -->
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">24/7 Keep-Alive Health Endpoint URL</label>
+            <span class="text-xs text-emerald-400 font-medium">HTTP 200 OK</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="health-url-input" readonly value="" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 focus:outline-none">
+            <button onclick="copyHealthURL()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2">
+              <i data-lucide="copy" class="w-4 h-4"></i> Copy URL
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">Pinging <code class="text-indigo-300 font-mono">/health</code> or <code class="text-indigo-300 font-mono">/ping</code> returns a standard JSON status response for continuous uptime verification.</p>
+        </div>
+
+        <div id="health-test-output" class="hidden rounded-lg p-3 text-xs font-mono bg-slate-950 border border-slate-800 text-slate-300 overflow-x-auto"></div>
+      </div>
+
+      <!-- Free 24/7 External Ping Guide -->
+      <div class="bg-indigo-950/20 border border-indigo-500/30 rounded-xl p-5 space-y-3">
+        <h3 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="globe" class="w-5 h-5 text-indigo-400"></i> How to Guarantee 100% 24/7 Uptime (Free)
+        </h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Your bot server includes built-in auto-reconnect, crash recovery, and anti-idle self-pings. To ensure your cloud container never goes to sleep even if inactive for days:
+        </p>
+        <ol class="list-decimal list-inside space-y-1 text-xs text-slate-300 pl-2">
+          <li>Copy your <strong>Keep-Alive Health Endpoint URL</strong> above.</li>
+          <li>Go to a free uptime monitor like <a href="https://uptimerobot.com" target="_blank" class="text-indigo-400 underline">UptimeRobot</a> or <a href="https://cron-job.org" target="_blank" class="text-indigo-400 underline">Cron-Job.org</a>.</li>
+          <li>Create a new HTTP monitor pointing to your URL with a 5-minute interval.</li>
+          <li>Your bot will now stay awake and forward messages 24/7 uninterrupted!</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- TAB: Server Cloner (/clone) -->
+    <div id="view-cloner" class="tab-content hidden space-y-6">
+      <!-- Cloner Overview Banner -->
+      <div class="bg-gradient-to-r from-cyan-950/40 via-slate-900 to-indigo-950/40 border border-cyan-500/30 rounded-xl p-6 relative overflow-hidden">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> High-Speed 1:1 Discord Server Cloner
+            </div>
+            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+              Server Cloner Engine
+            </h2>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Clone any Discord server structure into another server in seconds. Clones all categories, channels (text, voice, announcements, forums), permission overwrites, roles hierarchy, emojis, server name, and icon with exact 1:1 accuracy.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="fetchClonerGuilds()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition flex items-center gap-2 border border-slate-700 shadow-sm">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400"></i> Refresh Server List
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-800/80">
+          <div class="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3">
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Categories & Channels</div>
+            <div class="text-base font-bold text-cyan-400 font-mono mt-1">100% Exact Copy</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Bitrate, slowmode & NSFW</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3">
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Role Hierarchies</div>
+            <div class="text-base font-bold text-indigo-400 font-mono mt-1">Full Remapping</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Colors, hoists & permissions</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3">
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Custom Emojis</div>
+            <div class="text-base font-bold text-amber-400 font-mono mt-1">Auto-Upload</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Animated & static emojis</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3">
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Execution Methods</div>
+            <div class="text-base font-bold text-emerald-400 font-mono mt-1">Web UI + /clone</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Slash command & prefix</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clone Configuration Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-6">
+        <h3 class="font-semibold text-slate-100 flex items-center gap-2 text-base">
+          <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> Configure Clone Parameters
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Source Server -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i> 1. Source Server (Copy FROM)
+              </label>
+              <span class="text-[11px] text-slate-400">Template Origin</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Select from Bot's Servers</label>
+              <select id="cloner-source-select" onchange="handleClonerSourceSelect(this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                <option value="">-- Choose a joined server or enter ID below --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Or Enter Any Server ID Directly</label>
+              <input type="text" id="cloner-source-id" placeholder="e.g. 1486575666379096246" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
+              <p class="text-[11px] text-slate-400 mt-1">If the bot is not in the source server, ensure you have logged in with your user token under <strong>/login</strong> or the External tab.</p>
+            </div>
+          </div>
+
+          <!-- Destination Server -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i> 2. Destination Server (Clone TO)
+              </label>
+              <span class="text-[11px] text-slate-400">Target Server</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Select Target Server</label>
+              <select id="cloner-dest-select" onchange="handleClonerDestSelect(this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <option value="">-- Choose target server --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Or Enter Target Server ID Directly</label>
+              <input type="text" id="cloner-dest-id" placeholder="e.g. 1532774119463063744" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+              <p class="text-[11px] text-slate-400 mt-1">Bot must be in the destination server with Administrator or Manage Channels & Roles permissions.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options Toggles -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+          <label class="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">Cloning Options & Safety</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer text-slate-200">
+              <input type="checkbox" id="clone-opt-clear" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 focus:ring-cyan-500">
+              <span><strong>Wipe Destination First</strong><br><span class="text-[10px] text-slate-400">Cleans old channels & custom roles</span></span>
+            </label>
+            <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer text-slate-200">
+              <input type="checkbox" id="clone-opt-roles" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 focus:ring-cyan-500">
+              <span><strong>Clone Roles & Permissions</strong><br><span class="text-[10px] text-slate-400">Exact colors, hoists & rights</span></span>
+            </label>
+            <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer text-slate-200">
+              <input type="checkbox" id="clone-opt-channels" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 focus:ring-cyan-500">
+              <span><strong>Clone Channels & Categories</strong><br><span class="text-[10px] text-slate-400">Full layout, voice, forum, NSFW</span></span>
+            </label>
+            <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer text-slate-200">
+              <input type="checkbox" id="clone-opt-settings" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 focus:ring-cyan-500">
+              <span><strong>Clone Server Name & Icon</strong><br><span class="text-[10px] text-slate-400">Replicates icon & branding</span></span>
+            </label>
+            <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer text-slate-200">
+              <input type="checkbox" id="clone-opt-emojis" checked class="w-4 h-4 rounded text-cyan-600 bg-slate-950 border-slate-700 focus:ring-cyan-500">
+              <span><strong>Clone Custom Emojis</strong><br><span class="text-[10px] text-slate-400">Downloads & re-uploads emojis</span></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quick Copy Discord Command -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">Discord In-Chat Slash Command Equivalent</div>
+            <div id="cloner-cmd-preview" class="text-xs font-mono text-slate-300">/clone source_server_id:... destination_server_id:...</div>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-center">
+            <button onclick="copyClonerCommand('slash')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy /clone
+            </button>
+            <button onclick="copyClonerCommand('prefix')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+              <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Copy .clone
+            </button>
+          </div>
+        </div>
+
+        <!-- Execute Action Button -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+            <span>Safe execution with anti-rate-limit throttling and audit logs.</span>
+          </div>
+          <button id="cloner-start-btn" onclick="executeServerClone()" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-950/50 transition flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i> Start Server Cloning Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Terminal / Cloning Logs -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-slate-100 flex items-center gap-2 text-sm">
+            <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i> Live Cloner Console & Output
+          </h3>
+          <button onclick="clearClonerConsole()" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear Console
+          </button>
+        </div>
+
+        <div id="cloner-console" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 overflow-y-auto font-mono text-xs text-slate-300 space-y-1.5">
+          <div class="text-slate-500">[System] Server Cloner is ready. Select source & destination server above to begin.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: Forward Rules -->
+    <div id="view-rules" class="tab-content space-y-6">
+      <!-- Add Rule Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i> Add New Forward Mapping
+        </h2>
+        <form id="add-rule-form" onsubmit="handleAddRule(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Server (Guild) ID</label>
+            <input type="text" id="rule-guild-id" required placeholder="e.g. 123456789012345678" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Target Channel ID (Where to post)</label>
+            <input type="text" id="rule-target-id" required placeholder="e.g. 987654321098765432" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Source Channel ID (Where to copy from)</label>
+            <input type="text" id="rule-source-id" required placeholder="e.g. 555444333222111000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div class="md:col-span-3 flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition flex items-center gap-2">
+              <i data-lucide="save" class="w-4 h-4"></i> Save Rule
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Active Rules List -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+            <i data-lucide="list" class="w-5 h-5 text-indigo-400"></i> Active Channel Forwards
+          </h2>
+          <span class="text-xs text-slate-400">Saved in <code class="bg-slate-950 px-1 py-0.5 rounded text-slate-300">forwards.json</code></span>
+        </div>
+
+        <div id="rules-container" class="space-y-3">
+          <div class="text-center py-8 text-slate-500 text-sm">Loading forward rules...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Bot Servers & Channels -->
+    <div id="view-servers" class="tab-content hidden space-y-6">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="server" class="w-5 h-5 text-emerald-400"></i> Joined Servers
+        </h2>
+        <div id="servers-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="text-center py-8 text-slate-500 text-sm md:col-span-2">Loading server list...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Activity Logs -->
+    <div id="view-logs" class="tab-content hidden space-y-6">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+            <i data-lucide="activity" class="w-5 h-5 text-purple-400"></i> Message Forwarding Log
+          </h2>
+          <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-rose-400 transition">Clear Log</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-950/60 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Time</th>
+                <th class="py-3 px-4">Type</th>
+                <th class="py-3 px-4">Source Channel</th>
+                <th class="py-3 px-4">Target Channel</th>
+                <th class="py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body" class="divide-y divide-slate-800">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-500 text-sm">No activity recorded yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: External Servers & User Token -->
+    <div id="view-external" class="tab-content hidden space-y-6">
+      <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-5 space-y-4">
+        <div class="flex items-start space-x-3">
+          <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+              Forwarding from External Servers (Bot Not Joined)
+            </h2>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Standard Discord Bots can only access servers they have been invited to. To copy messages from <strong>ANY external server or channel where the bot is NOT invited</strong>, you can configure your <strong>Discord User Account Token</strong> below.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3">
+          <label class="block text-xs font-semibold text-amber-300 uppercase tracking-wider">Discord User Token (Optional)</label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="password" id="user-token-input" placeholder="Paste your Discord User Account Token..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500">
+            <button onclick="handleSaveUserToken()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2 justify-center whitespace-nowrap">
+              <i data-lucide="save" class="w-4 h-4"></i> Save User Token
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <span>Status: <strong id="user-token-status" class="text-slate-300">Checking...</strong></span>
+            <span class="text-slate-500">Stored safely in <code class="text-slate-400 font-mono">settings.json</code></span>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-400 space-y-2 bg-slate-900/60 p-4 rounded-lg border border-slate-800/80">
+          <p class="font-semibold text-slate-200">💡 How this works when the bot is not in the source server:</p>
+          <ul class="list-disc list-inside space-y-1 text-slate-300">
+            <li>When you run <code class="bg-slate-950 px-1 py-0.5 rounded text-amber-300 font-mono">/forwardall &lt;channel_id&gt;</code> or <code class="bg-slate-950 px-1 py-0.5 rounded text-amber-300 font-mono">/forward</code>, the forwarder will use your User Token REST API to fetch channel messages.</li>
+            <li>Messages are then copied and posted to your destination channel using your Bot!</li>
+            <li>No bot invite is required in the source server!</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Web Importer & Webhooks -->
+    <div id="view-importer" class="tab-content hidden space-y-6">
+      <!-- Web Importer Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="file-input" class="w-5 h-5 text-emerald-400"></i> Web Message Importer
+        </h2>
+        <p class="text-xs text-slate-400">Directly post text or exported messages into any Discord target channel without needing a source server connection.</p>
+
+        <form id="manual-forward-form" onsubmit="handleManualForward(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Target Channel ID *</label>
+              <input type="text" id="import-target-id" required placeholder="e.g. 123456789012345678" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Sender Name (Optional)</label>
+              <input type="text" id="import-sender-name" placeholder="e.g. Channel Backup Importer" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Message Content / Text Dump *</label>
+            <textarea id="import-message-text" rows="4" required placeholder="Paste message text or channel export content here to post to destination channel..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono"></textarea>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2">
+              <i data-lucide="send" class="w-4 h-4"></i> Send to Target Channel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Webhook API Endpoint Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-3">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="webhook" class="w-5 h-5 text-purple-400"></i> External Webhook Receiver API
+        </h2>
+        <p class="text-xs text-slate-400">Send HTTP POST requests from external tools (IFTTT, Zapier, custom scripts) to forward messages into your channels:</p>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-300 space-y-2 overflow-x-auto">
+          <div class="text-purple-400 font-bold">POST /api/webhook/forward</div>
+          <pre class="text-slate-400">{
+  "targetChannelId": "123456789012345678",
+  "content": "Message content to forward...",
+  "author": "Optional Author Name",
+  "source": "External Script"
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Help / Commands -->
+    <div id="view-help" class="tab-content hidden space-y-6">
+      <!-- Sync Slash Commands Card -->
+      <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-start space-x-3">
+          <div class="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30 mt-0.5">
+            <i data-lucide="zap" class="w-6 h-6 text-amber-400"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100 flex items-center gap-2">
+              Sync Native Discord Slash Commands
+            </h3>
+            <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+              Register <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/forwardall</code>, <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/purge</code>, <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/clear</code>, <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/deleteallchannels</code>, and <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/login</code> directly with Discord's native slash command picker menu.
+            </p>
+          </div>
+        </div>
+        <button onclick="handleRegisterCommands()" id="register-commands-btn-tab" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2 whitespace-nowrap shadow-md shadow-indigo-900/40">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-300"></i>
+          Register Slash Commands
+        </button>
+      </div>
+
+      <div id="register-feedback-msg" class="hidden rounded-lg p-3 text-xs font-medium"></div>
+
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+        <h2 class="font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="terminal" class="w-5 h-5 text-indigo-400"></i> Discord Commands Reference
+        </h2>
+        <p class="text-sm text-slate-400">In Discord, use slash commands or prefix commands in your server:</p>
+
+        <div class="space-y-3 font-mono text-xs">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1">/photo &lt;generate|list|rename|edit&gt;</div>
+            <div class="text-slate-300 font-sans text-xs">AI Photo Studio in Discord. Generate artworks in different styles (Cyberpunk, Anime, Synthwave, etc.), list generated photos with IDs, rename your saved photos, and modify/edit photos with custom AI instructions.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-emerald-400 font-bold text-sm mb-1">/lua &lt;code&gt;</div>
+            <div class="text-slate-300 font-sans text-xs">Execute real-time Lua 5.3 code directly in Discord via Fengari Lua runtime. Displays terminal standard output, errors, return values, and attaches the script.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-purple-400 font-bold text-sm mb-1">/python &lt;code&gt; (or /py)</div>
+            <div class="text-slate-300 font-sans text-xs">Execute real Python 3 code in an isolated sub-process sandbox. Displays stdout, print outputs, calculation results, and syntax errors.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/forwardall &lt;channel_id&gt; [destination_channel_id]</div>
+            <div class="text-slate-300 font-sans text-xs">Copy all .txt files (and accompanying images) from the source channel into the destination channel (or current channel if omitted), and automatically forward all future files in real-time.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/purge [all | number]</div>
+            <div class="text-slate-300 font-sans text-xs">Purges all messages in the <strong>same channel</strong> without deleting, recreating, or cloning the channel (keeps channel ID, permissions, topics, and webhooks intact). Defaults to all messages.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/login [token]</div>
+            <div class="text-slate-300 font-sans text-xs">Logs in your Discord user session. Pass your user token (<code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/login token:...</code>) to forward from external servers. Responses are <strong>ephemeral</strong> and strictly invisible to other players in the server.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/exporthtml [destination] [amount] [upload_files] [file]</div>
+            <div class="text-slate-300 font-sans text-xs">Exports channel messages into a styled HTML transcript file and sends it to the target channel ID (or current channel). Optionally downloads and re-uploads all attached files (.txt/images/documents) to the destination.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/clear</div>
+            <div class="text-slate-300 font-sans text-xs">Deletes the current channel and clones it back with the same permissions, category, and settings to instantly wipe all messages.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1">/deleteallchannels</div>
+            <div class="text-slate-300 font-sans text-xs">Deletes all channels and categories in the entire server and creates a single fresh text channel.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-rose-500/30 rounded-lg p-3">
+            <div class="text-rose-400 font-bold text-sm mb-1 flex items-center gap-2">
+              <span>🔒 /lockall channels [action: lock|unlock] [scope: all|text|voice] [reason]</span>
+              <span class="px-1.5 py-0.5 text-[10px] bg-rose-500/20 text-rose-300 rounded font-semibold uppercase">Turbo Lockdown</span>
+            </div>
+            <div class="text-slate-300 font-sans text-xs">Instantly locks down all server channels for <code class="bg-slate-900 px-1 py-0.5 rounded text-rose-300">@everyone</code> at high speed using parallel worker batching. Restores instantly with <code class="bg-slate-900 px-1 py-0.5 rounded text-emerald-300">/unlockall channels</code> or prefix <code class="bg-slate-900 px-1 py-0.5 rounded text-rose-300">.lockall channels</code> / <code class="bg-slate-900 px-1 py-0.5 rounded text-emerald-300">.unlockall channels</code>.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-cyan-500/30 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1 flex items-center gap-2">
+              <span>⚡ /role all &lt;role&gt; [action: add|remove] [target: all|humans|bots]</span>
+              <span class="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 rounded font-semibold uppercase">Turbo 0.50</span>
+            </div>
+            <div class="text-slate-300 font-sans text-xs">High-speed mass role management engine. Gives or removes a role to everybody in the server mad fast (~0.50s pipeline) using parallel worker batching and live progress tracker. Also works via <code class="bg-slate-900 px-1 py-0.5 rounded text-cyan-300">.role all &lt;@role&gt; [add/remove]</code> or <code class="bg-slate-900 px-1 py-0.5 rounded text-cyan-300">.massrole &lt;@role&gt;</code>.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-cyan-500/30 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1">/clone &lt;source_server_id&gt; [destination_server_id]</div>
+            <div class="text-slate-300 font-sans text-xs">Replicates an entire Discord server structure (all categories, channels, permission overwrites, roles hierarchy, custom emojis, server icon & name) into the destination server. Also works with prefix: <code class="bg-slate-900 px-1 py-0.5 rounded text-cyan-300">.clone &lt;source_server_id&gt; [destination_server_id]</code>.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1">/antinuke &lt;enable|disable|status|setup&gt;</div>
+            <div class="text-slate-300 font-sans text-xs">Master security switch. Automatically sets up 24/7 protection shields (channel/role recovery, anti-bot, anti-mass ban, anti-spam, anti-delete logs).</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1">/security &lt;toggle|view&gt;</div>
+            <div class="text-slate-300 font-sans text-xs">View active security shields or customize individual protections (anti-invite, anti-spam, anti-webhook, etc.).</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+            <div class="text-cyan-400 font-bold text-sm mb-1">/whitelist &lt;add|remove|list&gt;</div>
+            <div class="text-slate-300 font-sans text-xs">Manage trusted admins who are exempt from anti-nuke triggers and rapid-action limits.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-indigo-500/30 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1 flex items-center gap-2">
+              <span>⚡ /whitelist2 &lt;add|remove|list|check&gt; &lt;user&gt; (or .whitelist2 / .wl2)</span>
+              <span class="px-1.5 py-0.5 text-[10px] bg-indigo-500/20 text-indigo-300 rounded font-semibold uppercase">DM & Forward Whitelist</span>
+            </div>
+            <div class="text-slate-300 font-sans text-xs">Authorizes users to use channel forward commands, HTML exports, and bot utilities directly in <strong>Direct Messages (DMs)</strong> and locked server channels. Also available via prefix: <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">.whitelist2 add @user</code>.</div>
+          </div>
+
+          <div class="bg-slate-950 border border-indigo-500/30 rounded-lg p-3">
+            <div class="text-indigo-400 font-bold text-sm mb-1 flex items-center gap-2">
+              <span>🎫 /ticket-setup [channel] [category] [support_role] [title] [description]</span>
+              <span class="px-1.5 py-0.5 text-[10px] bg-indigo-500/20 text-indigo-300 rounded font-semibold uppercase">Interactive Tickets</span>
+            </div>
+            <div class="text-slate-300 font-sans text-xs">Deploys an interactive support ticket panel with a custom button. Users click the button to open a modal asking for their topic and issue, which automatically creates a private channel with custom staff permission overwrites and HTML transcript generation. Manage tickets using <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/ticket close</code>, <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">/ticket transcript</code>, or the in-chat button controls.</div>
+          </div>
+        </div>
+
+        <!-- Troubleshooting Checklist -->
+        <div class="mt-6 border-t border-slate-800 pt-5 space-y-3">
+          <h3 class="font-semibold text-slate-200 text-sm flex items-center gap-2">
+            <i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i> Why Are Commands Not Responding?
+          </h3>
+          <ul class="space-y-2 text-xs text-slate-300 list-disc list-inside bg-slate-950/80 p-4 rounded-lg border border-slate-800">
+            <li><strong class="text-amber-300">Bot Token Missing/Offline:</strong> Ensure <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">TOKEN</code> is set in project Environment Variables. If the header badge shows <span class="text-rose-400 font-semibold">Offline</span>, the bot cannot connect to Discord.</li>
+            <li><strong class="text-amber-300">Message Content Intent Disabled:</strong> In the <a href="https://discord.com/developers/applications" target="_blank" class="text-indigo-400 underline">Discord Developer Portal</a>, click your bot, go to <strong>Bot</strong> &rarr; <strong>Privileged Gateway Intents</strong>, and turn ON <strong>Message Content Intent</strong>. Without this enabled, Discord hides message text from bots!</li>
+            <li><strong class="text-amber-300">Developer Mode & Channel IDs:</strong> Turn on Developer Mode in Discord (<em>User Settings &rarr; Advanced &rarr; Developer Mode</em>), then right-click a channel to copy its exact numeric ID (e.g. <code class="bg-slate-900 px-1 py-0.5 rounded text-cyan-300">123456789012345678</code>).</li>
+            <li><strong class="text-amber-300">Bot Permissions:</strong> Ensure the bot has <strong>View Channels</strong>, <strong>Send Messages</strong>, <strong>Read Message History</strong>, <strong>Embed Links</strong>, and <strong>Attach Files</strong> in both the source and target channels.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let activeTab = 'rules';
+
+    function switchTab(tabName) {
+      activeTab = tabName;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'text-indigo-400');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      const activeView = document.getElementById(`view-${tabName}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-slate-400');
+        activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
+      }
+      if (activeView) {
+        activeView.classList.remove('hidden');
+      }
+    }
+
+    function formatUptime(totalSeconds) {
+      if (!totalSeconds || isNaN(totalSeconds)) return '00m 00s';
+      const days = Math.floor(totalSeconds / (3600 * 24));
+      const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+
+      const pad = num => String(num).padStart(2, '0');
+      if (days > 0) {
+        return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+      }
+      return `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+    }
+
+    async function fetchDashboardData() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data) return;
+
+        // Update status badge
+        const badge = document.getElementById('bot-status-badge');
+        const statName = document.getElementById('stat-bot-name');
+        const statServers = document.getElementById('stat-servers-count');
+        const statRules = document.getElementById('stat-rules-count');
+        const statLogs = document.getElementById('stat-logs-count');
+        const statPrefix = document.getElementById('stat-prefix');
+        const tokenBanner = document.getElementById('token-warning-banner');
+        const inviteBtn = document.getElementById('bot-invite-link');
+
+        const statUptime = document.getElementById('stat-uptime');
+        const statPing = document.getElementById('stat-ping');
+        const uptimeClock = document.getElementById('uptime-detail-clock');
+        const uptimePingMs = document.getElementById('uptime-ping-ms');
+        const healthUrlInput = document.getElementById('health-url-input');
+
+        if (healthUrlInput && !healthUrlInput.value) {
+          healthUrlInput.value = `${window.location.origin}/health`;
+        }
+
+        const formattedUptime = formatUptime(data.uptimeSeconds);
+        if (statUptime) statUptime.textContent = formattedUptime;
+        if (uptimeClock) uptimeClock.textContent = formattedUptime;
+
+        if (data.online) {
+          badge.className = "px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+          badge.textContent = "Online";
+          statName.textContent = data.botTag || 'Connected Bot';
+          tokenBanner.classList.add('hidden');
+
+          const pingVal = data.wsPingMs !== null && data.wsPingMs !== undefined ? `${data.wsPingMs} ms` : 'Active';
+          if (statPing) statPing.textContent = pingVal;
+          if (uptimePingMs) uptimePingMs.textContent = pingVal;
+        } else {
+          badge.className = "px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+          badge.textContent = "Offline";
+          statName.textContent = 'Offline';
+          if (statPing) statPing.textContent = 'Offline';
+          if (uptimePingMs) uptimePingMs.textContent = 'Offline';
+          if (!data.hasToken) {
+            tokenBanner.classList.remove('hidden');
+          }
+        }
+
+        statServers.textContent = data.guildsCount || 0;
+        statRules.textContent = data.forwardsCount || 0;
+        statLogs.textContent = data.logsCount || 0;
+        statPrefix.textContent = `Prefix: ${data.prefix || '.'}`;
+
+        if (data.clientId) {
+          inviteBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${data.clientId}&permissions=274877990912&scope=bot`;
+        } else {
+          inviteBtn.href = "#";
+        }
+
+        renderRules(data.forwards || {});
+        renderServers(data.guilds || []);
+        renderLogs(data.logs || []);
+
+      } catch (e) {
+        console.error('Failed to fetch dashboard data:', e);
+      }
+    }
+
+    function copyHealthURL() {
+      const input = document.getElementById('health-url-input');
+      if (input && input.value) {
+        navigator.clipboard.writeText(input.value);
+        alert('📋 Keep-Alive Health Endpoint URL copied to clipboard!');
+      }
+    }
+
+    async function testHealthPing() {
+      const output = document.getElementById('health-test-output');
+      if (!output) return;
+      output.classList.remove('hidden');
+      output.textContent = 'Pinging /health endpoint...';
+      try {
+        const start = Date.now();
+        const res = await fetch('/health');
+        const ms = Date.now() - start;
+        const data = await res.json();
+        output.innerHTML = `<span class="text-emerald-400">✅ HTTP ${res.status} OK (${ms}ms)</span>\n${JSON.stringify(data, null, 2)}`;
+      } catch (err) {
+        output.innerHTML = `<span class="text-rose-400">❌ Health check failed: ${err.message}</span>`;
+      }
+    }
+
+    function renderRules(forwards) {
+      const container = document.getElementById('rules-container');
+      const entries = [];
+
+      for (const [guildId, targets] of Object.entries(forwards)) {
+        for (const [targetId, sourceIds] of Object.entries(targets)) {
+          if (Array.isArray(sourceIds) && sourceIds.length > 0) {
+            entries.push({ guildId, targetId, sourceIds });
+          }
+        }
+      }
+
+      if (entries.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No active forward rules configured yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(item => `
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2 text-xs text-slate-400">
+              <span>Server ID: <code class="text-slate-300 font-mono">${item.guildId}</code></span>
+            </div>
+            <div class="flex items-center space-x-2 text-sm">
+              <span class="text-indigo-400 font-mono">Target Channel: ${item.targetId}</span>
+              <span class="text-slate-600">←</span>
+              <span class="text-cyan-400 font-mono">Sources: ${item.sourceIds.join(', ')}</span>
+            </div>
+          </div>
+          <button onclick="handleDeleteRule('${item.guildId}', '${item.targetId}')" class="px-3 py-1.5 text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 rounded-md transition self-start sm:self-center">
+            Remove Rule
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderServers(guilds) {
+      const container = document.getElementById('servers-container');
+      if (!guilds || guilds.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm md:col-span-2">Bot is not currently in any servers or token is offline.</div>`;
+        return;
+      }
+
+      container.innerHTML = guilds.map(g => `
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-slate-200 text-sm">${g.name}</h3>
+            <span class="text-xs font-mono text-slate-500">${g.id}</span>
+          </div>
+          <p class="text-xs text-slate-400">${g.channelsCount || 0} channels available</p>
+        </div>
+      `).join('');
+    }
+
+    function renderLogs(logs) {
+      const tbody = document.getElementById('logs-table-body');
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 text-sm">No activity recorded yet</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => `
+        <tr class="hover:bg-slate-900/40">
+          <td class="py-2.5 px-4 text-xs font-mono text-slate-400">${new Date(l.timestamp).toLocaleTimeString()}</td>
+          <td class="py-2.5 px-4 text-xs font-medium text-slate-300">${l.type || 'Forward'}</td>
+          <td class="py-2.5 px-4 text-xs font-mono text-cyan-400">${l.sourceId || '-'}</td>
+          <td class="py-2.5 px-4 text-xs font-mono text-indigo-400">${l.targetId || '-'}</td>
+          <td class="py-2.5 px-4 text-xs">
+            <span class="px-2 py-0.5 rounded text-xs font-medium ${l.success ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+              ${l.success ? 'Success' : 'Failed'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function handleAddRule(e) {
+      e.preventDefault();
+      const guildId = document.getElementById('rule-guild-id').value.trim();
+      const targetChannelId = document.getElementById('rule-target-id').value.trim();
+      const sourceChannelId = document.getElementById('rule-source-id').value.trim();
+
+      if (!guildId || !targetChannelId || !sourceChannelId) return;
+
+      try {
+        await fetch('/api/forwards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guildId, targetChannelId, sourceChannelId })
+        });
+        document.getElementById('add-rule-form').reset();
+        fetchDashboardData();
+      } catch (err) {
+        alert('Failed to add rule');
+      }
+    }
+
+    async function handleDeleteRule(guildId, targetChannelId) {
+      if (!confirm('Are you sure you want to remove this forward rule?')) return;
+      try {
+        await fetch('/api/forwards', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guildId, targetChannelId })
+        });
+        fetchDashboardData();
+      } catch (err) {
+        alert('Failed to delete rule');
+      }
+    }
+
+    async function handleRegisterCommands() {
+      const btnHeader = document.getElementById('register-commands-btn-header');
+      const btnTab = document.getElementById('register-commands-btn-tab');
+      const feedback = document.getElementById('register-feedback-msg');
+
+      const originalHeaderText = btnHeader ? btnHeader.innerHTML : '';
+      const originalTabText = btnTab ? btnTab.innerHTML : '';
+
+      const loadingHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Registering...`;
+
+      if (btnHeader) { btnHeader.disabled = true; btnHeader.innerHTML = loadingHTML; }
+      if (btnTab) { btnTab.disabled = true; btnTab.innerHTML = loadingHTML; }
+      if (feedback) { feedback.classList.add('hidden'); }
+      if (window.lucide) window.lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/register-commands', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          if (feedback) {
+            feedback.className = "rounded-lg p-3 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            feedback.innerHTML = `✅ ${data.message || 'Slash commands registered successfully!'}`;
+            feedback.classList.remove('hidden');
+          }
+          alert(`✅ Success: ${data.message}`);
+          fetchDashboardData();
+        } else {
+          if (feedback) {
+            feedback.className = "rounded-lg p-3 text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20";
+            feedback.innerHTML = `❌ Error: ${data.error || 'Failed to register commands'}`;
+            feedback.classList.remove('hidden');
+          }
+          alert(`❌ Failed: ${data.error || 'Bot is offline or invalid token.'}`);
+        }
+      } catch (err) {
+        console.error('Register commands error:', err);
+        alert('❌ Network error while registering commands.');
+      } finally {
+        if (btnHeader) { btnHeader.disabled = false; btnHeader.innerHTML = originalHeaderText; }
+        if (btnTab) { btnTab.disabled = false; btnTab.innerHTML = originalTabText; }
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data) return;
+        const statusEl = document.getElementById('user-token-status');
+        if (data.userTokenConfigured) {
+          if (statusEl) {
+            statusEl.className = "text-emerald-400 font-semibold";
+            statusEl.textContent = `Configured (${data.maskedUserToken || 'Active'})`;
+          }
+        } else {
+          if (statusEl) {
+            statusEl.className = "text-amber-400 font-semibold";
+            statusEl.textContent = "Not Configured";
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings:', err);
+      }
+    }
+
+    async function handleSaveUserToken() {
+      const tokenInput = document.getElementById('user-token-input');
+      const token = tokenInput ? tokenInput.value.trim() : '';
+      if (!token) {
+        alert('Please paste a valid User Token!');
+        return;
+      }
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userToken: token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ User Token saved successfully!');
+          tokenInput.value = '';
+          fetchSettings();
+        } else {
+          alert('❌ Failed to save User Token');
+        }
+      } catch (err) {
+        alert('❌ Error saving User Token');
+      }
+    }
+
+    async function handleManualForward(e) {
+      e.preventDefault();
+      const targetChannelId = document.getElementById('import-target-id').value.trim();
+      const content = document.getElementById('import-message-text').value.trim();
+      const senderName = document.getElementById('import-sender-name').value.trim();
+
+      if (!targetChannelId || !content) return;
+
+      try {
+        const res = await fetch('/api/manual-forward', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetChannelId, content, senderName })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Message sent successfully to target channel!');
+          document.getElementById('manual-forward-form').reset();
+          fetchDashboardData();
+        } else {
+          alert(`❌ Failed to send message: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert('❌ Network error sending message');
+      }
+    }
+
+    async function clearLogs() {
+      try {
+        await fetch('/api/logs', { method: 'DELETE' });
+        fetchDashboardData();
+      } catch (err) {}
+    }
+
+    // Security & Anti-Nuke Management Logic
+    let currentSecurityData = null;
+    let selectedGuildId = null;
+
+    async function fetchSecurityData() {
+      try {
+        const res = await fetch('/api/security');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.success) return;
+        currentSecurityData = data;
+
+        // Populate server dropdown
+        const select = document.getElementById('whitelist-guild-select');
+        if (select) {
+          const prevVal = select.value;
+          select.innerHTML = '<option value="">Select a server...</option>' + 
+            data.guilds.map(g => `<option value="${g.id}">${g.name} (${g.membersCount || 0} members)</option>`).join('');
+          if (prevVal && data.guilds.some(g => g.id === prevVal)) {
+            select.value = prevVal;
+          } else if (data.guilds.length > 0 && !select.value) {
+            select.value = data.guilds[0].id;
+          }
+          selectedGuildId = select.value;
+        }
+
+        renderShieldsList();
+        renderWhitelistUsers();
+      } catch (err) {
+        console.error('Failed to fetch security data:', err);
+      }
+    }
+
+    function renderShieldsList() {
+      const container = document.getElementById('shields-grid-container');
+      if (!container || !currentSecurityData) return;
+
+      const activeGuild = currentSecurityData.guilds.find(g => g.id === selectedGuildId);
+      const guildSec = activeGuild?.security || {};
+
+      container.innerHTML = currentSecurityData.shields.map(s => {
+        const isEnabled = typeof guildSec[s.id] !== 'undefined' ? guildSec[s.id] : true;
+        return `
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3.5 flex items-start justify-between gap-3 hover:border-slate-700 transition">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full ${isEnabled ? 'bg-cyan-400' : 'bg-slate-600'}"></span>
+                <span class="text-xs font-semibold text-slate-200">${s.name}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-tight">${s.desc}</p>
+            </div>
+            <button onclick="handleToggleShield('${s.id}', ${!isEnabled})" class="px-2 py-1 text-[10px] font-bold rounded ${isEnabled ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} transition shrink-0">
+              ${isEnabled ? 'ACTIVE' : 'OFF'}
+            </button>
+          </div>
+        `;
+      }).join('');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderWhitelistUsers() {
+      const listEl = document.getElementById('whitelist-users-list');
+      if (!listEl || !currentSecurityData) return;
+
+      const activeGuild = currentSecurityData.guilds.find(g => g.id === selectedGuildId);
+      if (!activeGuild || !activeGuild.security || !activeGuild.security.whitelist) {
+        listEl.innerHTML = '<div class="text-xs text-slate-500 italic">No whitelisted members configured.</div>';
+        return;
+      }
+
+      const whitelist = activeGuild.security.whitelist;
+      const masterOwnerId = currentSecurityData.masterOwnerId || '1207803375807373415';
+      if (whitelist.length === 0) {
+        listEl.innerHTML = '<div class="text-xs text-slate-500 italic">No whitelisted members.</div>';
+        return;
+      }
+
+      listEl.innerHTML = whitelist.map(id => {
+        const isMaster = id === masterOwnerId;
+        const isOwner = id === activeGuild.ownerId && !isMaster;
+        return `
+          <div class="flex items-center justify-between bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800 text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="font-mono text-cyan-400 text-[11px] truncate">${id}</span>
+              ${isMaster ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-semibold">👑 Me (Master)</span>' : ''}
+              ${isOwner ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 rounded">Owner</span>' : ''}
+            </div>
+            ${!isMaster ? `<button onclick="handleWhitelistRemove('${id}')" class="text-rose-400 hover:text-rose-300 p-0.5" title="Remove"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
+          </div>
+        `;
+      }).join('');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function handleUnwhitelistAllOthers() {
+      if (!confirm('Are you sure you want to unwhitelist everyone across all servers and keep only yourself (Master Operator)?')) return;
+      try {
+        const res = await fetch('/api/security/unwhitelist-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ Successfully unwhitelisted ${data.unwhitelistedCount || 0} user(s). Only you and the bot remain whitelisted.`);
+          fetchSecurityData();
+        } else {
+          alert('❌ Failed to unwhitelist all users.');
+        }
+      } catch (err) {
+        alert('Network error unwhitelisting users.');
+      }
+    }
+
+    async function handleToggleShield(shieldId, newState) {
+      if (!selectedGuildId) {
+        alert('Please select a server first.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/security/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guildId: selectedGuildId, shield: shieldId, enabled: newState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          fetchSecurityData();
+        }
+      } catch (e) {
+        alert('Failed to toggle shield state.');
+      }
+    }
+
+    async function handleWhitelistAdd(e) {
+      e.preventDefault();
+      const select = document.getElementById('whitelist-guild-select');
+      const userInput = document.getElementById('whitelist-user-id');
+      const guildId = select ? select.value : selectedGuildId;
+      const userId = userInput ? userInput.value.trim() : '';
+
+      if (!guildId || !userId) {
+        alert('Please select a server and enter a valid user ID.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/security/whitelist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guildId, userId, action: 'add' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          userInput.value = '';
+          fetchSecurityData();
+        } else {
+          alert('Failed to add to whitelist.');
+        }
+      } catch (err) {
+        alert('Error adding to whitelist.');
+      }
+    }
+
+    async function handleWhitelistRemove(userId) {
+      if (!selectedGuildId || !userId) return;
+      if (!confirm(`Remove ${userId} from whitelist?`)) return;
+
+      try {
+        const res = await fetch('/api/security/whitelist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guildId: selectedGuildId, userId, action: 'remove' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          fetchSecurityData();
+        }
+      } catch (err) {
+        alert('Error removing from whitelist.');
+      }
+    }
+
+    async function triggerAutoSecuritySetup() {
+      try {
+        const res = await fetch('/api/security/auto-setup', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ Automated security initialized across ${data.setupCount} server(s)! Created/verified #security-logs audit channels.`);
+          fetchSecurityData();
+          fetchDashboardData();
+        } else {
+          alert(`❌ Failed: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert('Network error triggering security auto-setup.');
+      }
+    }
+
+    // ==========================================
+    // AI Photo Studio & Multi-Runtime Code Engine
+    // ==========================================
+    let allPhotos = [];
+    let activePhoto = null;
+    let currentRuntimeLang = 'lua';
+
+    function setStudioView(view) {
+      const photosSec = document.getElementById('studio-view-photos');
+      const runtimesSec = document.getElementById('studio-view-runtimes');
+      const btnPhotos = document.getElementById('subtab-btn-photos');
+      const btnRuntimes = document.getElementById('subtab-btn-runtimes');
+
+      if (view === 'photos') {
+        if (photosSec) photosSec.classList.remove('hidden');
+        if (runtimesSec) runtimesSec.classList.add('hidden');
+        if (btnPhotos) {
+          btnPhotos.className = 'px-4 py-2 rounded-lg bg-cyan-600 text-white text-xs font-semibold flex items-center gap-2 transition';
+        }
+        if (btnRuntimes) {
+          btnRuntimes.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-xs font-medium flex items-center gap-2 transition';
+        }
+      } else {
+        if (photosSec) photosSec.classList.add('hidden');
+        if (runtimesSec) runtimesSec.classList.remove('hidden');
+        if (btnPhotos) {
+          btnPhotos.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-xs font-medium flex items-center gap-2 transition';
+        }
+        if (btnRuntimes) {
+          btnRuntimes.className = 'px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold flex items-center gap-2 transition';
+        }
+      }
+    }
+
+    async function refreshPhotosGallery() {
+      try {
+        const res = await fetch('/api/photos');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.photos)) {
+          allPhotos = data.photos;
+          renderPhotosGallery();
+          const statTotal = document.getElementById('stat-total-photos');
+          const counterTag = document.getElementById('gallery-counter-tag');
+          if (statTotal) statTotal.textContent = `${allPhotos.length} Photos`;
+          if (counterTag) counterTag.textContent = `${allPhotos.length} Items`;
+          if (!activePhoto && allPhotos.length > 0) {
+            selectPhotoForWorkbench(allPhotos[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load photos gallery:', err);
+      }
+    }
+
+    function renderPhotosGallery() {
+      const container = document.getElementById('photos-gallery-grid');
+      if (!container) return;
+
+      if (!allPhotos || allPhotos.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-10 text-slate-500 text-xs space-y-2">
+            <i data-lucide="image-plus" class="w-8 h-8 mx-auto text-slate-700"></i>
+            <div>No photos created yet. Type a prompt on the left to generate your first photo!</div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = allPhotos.map(p => {
+        const isSelected = activePhoto && activePhoto.id === p.id;
+        return `
+          <div onclick="selectPhotoForWorkbench('${p.id}')" class="group bg-slate-950 border ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-400/20' : 'border-slate-800 hover:border-slate-700'} rounded-xl p-2 cursor-pointer transition flex flex-col space-y-2 relative overflow-hidden">
+            <div class="w-full aspect-square bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center relative">
+              <img src="${p.dataUrl}" alt="${escapeHtml(p.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+              <span class="absolute top-1.5 right-1.5 text-[9px] bg-slate-950/80 backdrop-blur px-1.5 py-0.5 rounded font-mono text-cyan-300 border border-slate-700">
+                ${escapeHtml(p.aspectRatio || '1:1')}
+              </span>
+            </div>
+            <div class="space-y-0.5 min-w-0">
+              <div class="text-xs font-semibold text-slate-200 truncate">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] text-slate-400 truncate">${escapeHtml(p.prompt)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function selectPhotoForWorkbench(photoId) {
+      const found = allPhotos.find(p => p.id === photoId);
+      if (!found) return;
+      activePhoto = found;
+
+      const emptyState = document.getElementById('workbench-empty-state');
+      const imgEl = document.getElementById('workbench-image');
+      const engineTag = document.getElementById('workbench-engine-tag');
+      const idBadge = document.getElementById('selected-photo-id-badge');
+      const renameInput = document.getElementById('workbench-rename-input');
+
+      if (emptyState) emptyState.classList.add('hidden');
+      if (imgEl) {
+        imgEl.src = found.dataUrl;
+        imgEl.classList.remove('hidden');
+      }
+      if (engineTag) {
+        engineTag.classList.remove('hidden');
+        engineTag.textContent = `${found.style || 'AI Art'} • ${found.aspectRatio || '1:1'}`;
+      }
+      if (idBadge) idBadge.textContent = `ID: ${found.id.slice(0, 8)}...`;
+      if (renameInput) renameInput.value = found.name || '';
+
+      resetWorkbenchFilters();
+      renderPhotosGallery();
+    }
+
+    async function generateNewPhoto() {
+      const promptInput = document.getElementById('photo-prompt-input');
+      const styleSelect = document.getElementById('photo-style-select');
+      const ratioSelect = document.getElementById('photo-ratio-select');
+      const nameInput = document.getElementById('photo-name-input');
+      const btn = document.getElementById('btn-generate-photo');
+      const btnText = document.getElementById('generate-photo-text');
+
+      const prompt = promptInput ? promptInput.value.trim() : '';
+      if (!prompt) {
+        alert('Please enter a prompt description to generate a photo.');
+        return;
+      }
+
+      const style = styleSelect ? styleSelect.value : 'Digital Art';
+      const aspectRatio = ratioSelect ? ratioSelect.value : '1:1';
+      const name = nameInput && nameInput.value.trim() ? nameInput.value.trim() : undefined;
+
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = 'Generating Photo with AI...';
+
+      try {
+        const res = await fetch('/api/photos/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, style, aspectRatio, name })
+        });
+        const data = await res.json();
+        if (data.success && data.photo) {
+          allPhotos.unshift(data.photo);
+          renderPhotosGallery();
+          selectPhotoForWorkbench(data.photo.id);
+          if (promptInput) promptInput.value = '';
+          if (nameInput) nameInput.value = '';
+        } else {
+          alert('❌ Generation failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Network error generating photo: ' + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Generate Photo';
+      }
+    }
+
+    async function savePhotoRename() {
+      if (!activePhoto) {
+        alert('Please select a photo from the gallery first.');
+        return;
+      }
+      const renameInput = document.getElementById('workbench-rename-input');
+      const newName = renameInput ? renameInput.value.trim() : '';
+      if (!newName) {
+        alert('Please enter a new name for the photo.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/photos/rename', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: activePhoto.id, newName })
+        });
+        const data = await res.json();
+        if (data.success && data.photo) {
+          activePhoto.name = data.photo.name;
+          const idx = allPhotos.findIndex(p => p.id === activePhoto.id);
+          if (idx !== -1) allPhotos[idx].name = data.photo.name;
+          renderPhotosGallery();
+          alert('✅ Photo name updated successfully to: ' + data.photo.name);
+        } else {
+          alert('❌ Failed to rename: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Network error renaming photo: ' + err.message);
+      }
+    }
+
+    async function applyPhotoAIEdit() {
+      if (!activePhoto) {
+        alert('Please select a photo from the gallery first.');
+        return;
+      }
+      const editInput = document.getElementById('workbench-edit-input');
+      const instructions = editInput ? editInput.value.trim() : '';
+      if (!instructions) {
+        alert('Please enter instructions for what to change or transform on the photo.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-apply-ai-edit');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Applying AI Changes...';
+      }
+
+      try {
+        const res = await fetch('/api/photos/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: activePhoto.id, instructions })
+        });
+        const data = await res.json();
+        if (data.success && data.photo) {
+          activePhoto.dataUrl = data.photo.dataUrl;
+          activePhoto.prompt = data.photo.prompt;
+          const idx = allPhotos.findIndex(p => p.id === activePhoto.id);
+          if (idx !== -1) allPhotos[idx] = data.photo;
+          selectPhotoForWorkbench(data.photo.id);
+          if (editInput) editInput.value = '';
+          alert('✅ AI modifications applied successfully!');
+        } else {
+          alert('❌ Failed to edit photo: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Network error editing photo: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Apply Changes';
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+    }
+
+    function updatePhotoFilters() {
+      const imgEl = document.getElementById('workbench-image');
+      if (!imgEl) return;
+
+      const brightness = document.getElementById('slider-brightness')?.value || 100;
+      const contrast = document.getElementById('slider-contrast')?.value || 100;
+      const hue = document.getElementById('slider-hue')?.value || 0;
+      const saturate = document.getElementById('slider-saturate')?.value || 100;
+
+      const valB = document.getElementById('val-brightness');
+      const valC = document.getElementById('val-contrast');
+      const valH = document.getElementById('val-hue');
+      const valS = document.getElementById('val-saturate');
+
+      if (valB) valB.textContent = `${brightness}%`;
+      if (valC) valC.textContent = `${contrast}%`;
+      if (valH) valH.textContent = `${hue}°`;
+      if (valS) valS.textContent = `${saturate}%`;
+
+      imgEl.style.filter = `brightness(${brightness}%) contrast(${contrast}%) hue-rotate(${hue}deg) saturate(${saturate}%)`;
+    }
+
+    function resetWorkbenchFilters() {
+      const sb = document.getElementById('slider-brightness');
+      const sc = document.getElementById('slider-contrast');
+      const sh = document.getElementById('slider-hue');
+      const ss = document.getElementById('slider-saturate');
+
+      if (sb) sb.value = 100;
+      if (sc) sc.value = 100;
+      if (sh) sh.value = 0;
+      if (ss) ss.value = 100;
+
+      updatePhotoFilters();
+    }
+
+    function downloadActivePhoto() {
+      if (!activePhoto) {
+        alert('Please select a photo to download.');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = activePhoto.dataUrl;
+      const safeName = (activePhoto.name || 'artwork').replace(/[^a-zA-Z0-9_-]/g, '_');
+      let ext = 'png';
+      if (activePhoto.dataUrl.startsWith('data:image/svg+xml')) {
+        ext = 'svg';
+      } else if (activePhoto.dataUrl.startsWith('data:image/jpeg')) {
+        ext = 'jpg';
+      } else if (activePhoto.dataUrl.startsWith('data:image/webp')) {
+        ext = 'webp';
+      }
+      a.download = `${safeName}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    async function deleteActivePhoto() {
+      if (!activePhoto) return;
+      if (!confirm(`Are you sure you want to delete "${activePhoto.name}"?`)) return;
+
+      try {
+        const res = await fetch(`/api/photos/${activePhoto.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          allPhotos = allPhotos.filter(p => p.id !== activePhoto.id);
+          activePhoto = allPhotos.length > 0 ? allPhotos[0] : null;
+          if (activePhoto) {
+            selectPhotoForWorkbench(activePhoto.id);
+          } else {
+            const emptyState = document.getElementById('workbench-empty-state');
+            const imgEl = document.getElementById('workbench-image');
+            const engineTag = document.getElementById('workbench-engine-tag');
+            const idBadge = document.getElementById('selected-photo-id-badge');
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (imgEl) imgEl.classList.add('hidden');
+            if (engineTag) engineTag.classList.add('hidden');
+            if (idBadge) idBadge.textContent = 'No photo selected';
+          }
+          renderPhotosGallery();
+        }
+      } catch (err) {
+        alert('Network error deleting photo.');
+      }
+    }
+
+    function insertPhotoPreset(type) {
+      const promptInput = document.getElementById('photo-prompt-input');
+      const styleSelect = document.getElementById('photo-style-select');
+      const nameInput = document.getElementById('photo-name-input');
+      if (!promptInput) return;
+
+      if (type === 'cyberpunk') {
+        promptInput.value = 'Futuristic cyberpunk neon skyscraper megacity shrouded in midnight rain with flying vehicles and glowing holographic billboards';
+        if (styleSelect) styleSelect.value = 'Cyberpunk Neon';
+        if (nameInput) nameInput.value = 'Neon Megacity 2099';
+      } else if (type === 'galaxy') {
+        promptInput.value = 'Deep cosmic nebula with swirling violet and turquoise star dust, glowing supernova rings and vibrant distant galaxy spirals';
+        if (styleSelect) styleSelect.value = 'Digital Art';
+        if (nameInput) nameInput.value = 'Cosmic Violet Nebula';
+      } else if (type === 'dragon') {
+        promptInput.value = 'Majestic emerald green celestial dragon coiled around an ancient floating mountain peak among golden clouds';
+        if (styleSelect) styleSelect.value = 'Cinematic Landscape';
+        if (nameInput) nameInput.value = 'Emerald Sky Dragon';
+      } else if (type === 'synthwave') {
+        promptInput.value = '80s retro outrun synthwave horizon with giant glowing neon wireframe sun, chrome palm trees and grid road';
+        if (styleSelect) styleSelect.value = 'Retro Synthwave';
+        if (nameInput) nameInput.value = 'Synthwave Sunset Highway';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ==========================================
+    // 🔄 Server Cloner Logic
+    // ==========================================
+    let clonerGuilds = [];
+
+    async function fetchClonerGuilds() {
+      try {
+        const res = await fetch('/api/server/guilds');
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.guilds)) {
+          clonerGuilds = data.guilds;
+          populateClonerDropdowns();
+        }
+      } catch (err) {
+        console.error('Failed to fetch guilds for cloner:', err);
+      }
+    }
+
+    function populateClonerDropdowns() {
+      const srcSelect = document.getElementById('cloner-source-select');
+      const destSelect = document.getElementById('cloner-dest-select');
+
+      const optionsHtml = '<option value="">-- Choose a server or enter ID below --</option>' +
+        clonerGuilds.map(g => `<option value="${g.id}">${escapeHtml(g.name)} (${g.channelsCount || 0} channels, ${g.rolesCount || 0} roles)</option>`).join('');
+
+      if (srcSelect) {
+        const prevSrc = srcSelect.value;
+        srcSelect.innerHTML = optionsHtml;
+        if (prevSrc) srcSelect.value = prevSrc;
+      }
+
+      if (destSelect) {
+        const prevDest = destSelect.value;
+        destSelect.innerHTML = '<option value="">-- Choose target destination server --</option>' +
+          clonerGuilds.map(g => `<option value="${g.id}">${escapeHtml(g.name)} (${g.id})</option>`).join('');
+        if (prevDest) destSelect.value = prevDest;
+      }
+      updateClonerCmdPreview();
+    }
+
+    function handleClonerSourceSelect(val) {
+      const input = document.getElementById('cloner-source-id');
+      if (input && val) input.value = val;
+      updateClonerCmdPreview();
+    }
+
+    function handleClonerDestSelect(val) {
+      const input = document.getElementById('cloner-dest-id');
+      if (input && val) input.value = val;
+      updateClonerCmdPreview();
+    }
+
+    function updateClonerCmdPreview() {
+      const srcInput = document.getElementById('cloner-source-id');
+      const destInput = document.getElementById('cloner-dest-id');
+      const preview = document.getElementById('cloner-cmd-preview');
+      if (!preview) return;
+
+      const src = (srcInput && srcInput.value.trim()) || '<source_server_id>';
+      const dest = (destInput && destInput.value.trim()) || '<destination_server_id>';
+      preview.textContent = `/clone source_server_id:${src} destination_server_id:${dest}`;
+    }
+
+    function copyClonerCommand(type) {
+      const srcInput = document.getElementById('cloner-source-id');
+      const destInput = document.getElementById('cloner-dest-id');
+      const src = (srcInput && srcInput.value.trim()) || '1486575666379096246';
+      const dest = (destInput && destInput.value.trim()) || '1532774119463063744';
+
+      let text = '';
+      if (type === 'slash') {
+        text = `/clone source_server_id:${src} destination_server_id:${dest}`;
+      } else {
+        text = `.clone ${src} ${dest}`;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert(`✅ Copied to clipboard:\n${text}`);
+      }).catch(() => {
+        prompt('Copy command:', text);
+      });
+    }
+
+    function appendClonerLog(text, isError = false) {
+      const con = document.getElementById('cloner-console');
+      if (!con) return;
+      const el = document.createElement('div');
+      el.className = isError ? 'text-rose-400 font-semibold' : (text.includes('🎉') || text.includes('COMPLETE') ? 'text-cyan-300 font-bold' : (text.includes('✅') ? 'text-emerald-400' : 'text-slate-300'));
+      el.textContent = text;
+      con.appendChild(el);
+      con.scrollTop = con.scrollHeight;
+    }
+
+    function clearClonerConsole() {
+      const con = document.getElementById('cloner-console');
+      if (con) {
+        con.innerHTML = '<div class="text-slate-500">[System] Console cleared. Ready.</div>';
+      }
+    }
+
+    async function executeServerClone() {
+      const srcInput = document.getElementById('cloner-source-id');
+      const destInput = document.getElementById('cloner-dest-id');
+      const sourceGuildId = srcInput ? srcInput.value.trim() : '';
+      const destinationGuildId = destInput ? destInput.value.trim() : '';
+
+      if (!sourceGuildId) {
+        alert('Please enter or select a Source Server ID.');
+        if (srcInput) srcInput.focus();
+        return;
+      }
+
+      if (!destinationGuildId) {
+        alert('Please enter or select a Destination Server ID.');
+        if (destInput) destInput.focus();
+        return;
+      }
+
+      if (sourceGuildId === destinationGuildId) {
+        alert('Source and destination servers cannot be the same server!');
+        return;
+      }
+
+      const clearDestination = document.getElementById('clone-opt-clear')?.checked ?? true;
+      const cloneRoles = document.getElementById('clone-opt-roles')?.checked ?? true;
+      const cloneChannels = document.getElementById('clone-opt-channels')?.checked ?? true;
+      const cloneSettings = document.getElementById('clone-opt-settings')?.checked ?? true;
+      const cloneEmojis = document.getElementById('clone-opt-emojis')?.checked ?? true;
+
+      const confirmMsg = `⚠️ ARE YOU SURE you want to clone server ${sourceGuildId} ➔ ${destinationGuildId}?\n\n` +
+        (clearDestination ? '• Old channels & custom roles in DESTINATION will be WIPED first.\n' : '') +
+        '• Roles, categories, channels & emojis will be recreated.\n\nClick OK to proceed.';
+
+      if (!confirm(confirmMsg)) return;
+
+      const btn = document.getElementById('cloner-start-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Cloning in progress...';
+      }
+
+      appendClonerLog(`[${new Date().toLocaleTimeString()}] 🚀 Initiating server clone request to bot engine...`);
+
+      try {
+        const res = await fetch('/api/server/clone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceGuildId,
+            destinationGuildId,
+            clearDestination,
+            cloneRoles,
+            cloneChannels,
+            cloneSettings,
+            cloneEmojis
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.logs && Array.isArray(data.logs)) {
+          for (const l of data.logs) {
+            appendClonerLog(l);
+          }
+        }
+
+        if (data.success) {
+          appendClonerLog(`🎉 SUCCESS: Cloned ${data.rolesCloned} roles, ${data.categoriesCloned} categories, ${data.channelsCloned} channels, ${data.emojisCloned} emojis from "${data.sourceGuild}" into "${data.destinationGuild}"!`);
+          alert(`🎉 Server cloning complete!\n\nReplicated "${data.sourceGuild}" into "${data.destinationGuild}"\n• Roles: ${data.rolesCloned}\n• Categories: ${data.categoriesCloned}\n• Channels: ${data.channelsCloned}\n• Emojis: ${data.emojisCloned}`);
+          fetchClonerGuilds();
+          fetchDashboardData();
+        } else {
+          appendClonerLog(`❌ Clone Error: ${data.error || 'Unknown failure'}`, true);
+          alert(`❌ Server cloning failed:\n${data.error || 'Unknown failure'}`);
+        }
+      } catch (err) {
+        appendClonerLog(`❌ Network failure: ${err.message}`, true);
+        alert(`❌ Network failure during cloning: ${err.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Start Server Cloning Now';
+          lucide.createIcons();
+        }
+      }
+    }
+
+    // Initialize lucide icons & fetch data
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      fetchDashboardData();
+      fetchSettings();
+      fetchSecurityData();
+      fetchClonerGuilds();
+      refreshPhotosGallery();
+      setInterval(fetchDashboardData, 5000);
+
+      const guildSelect = document.getElementById('whitelist-guild-select');
+      if (guildSelect) {
+        guildSelect.addEventListener('change', (e) => {
+          selectedGuildId = e.target.value;
+          renderShieldsList();
+          renderWhitelistUsers();
+        });
+      }
+
+      const srcIdInput = document.getElementById('cloner-source-id');
+      const destIdInput = document.getElementById('cloner-dest-id');
+      if (srcIdInput) srcIdInput.addEventListener('input', updateClonerCmdPreview);
+      if (destIdInput) destIdInput.addEventListener('input', updateClonerCmdPreview);
+    });
+  </script>
+</body>
+</html>

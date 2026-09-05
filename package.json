@@ -1,0 +1,20 @@
+{
+  "name": "discord-forward-bot",
+  "version": "1.0.0",
+  "description": "Copy ALL messages from any channel",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "build": "node -c index.js",
+    "lint": "node -c index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.18.0",
+    "@napi-rs/canvas": "^1.0.8",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1",
+    "fengari": "^0.1.5"
+  }
+}

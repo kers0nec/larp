@@ -1,0 +1,6 @@
+{
+  "name": "Discord Message Forwarder",
+  "description": "Discord forwarder bot with complete Server Cloner, interactive Ticket System, Whitelist 2 DM & Forward access, AI Photo Studio, automated Anti-Nuke protection, and real-time dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
