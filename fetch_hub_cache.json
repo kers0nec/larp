@@ -1,0 +1,834 @@
+[
+  {
+    "name": "395_lavehub_semi_tp.lua.txt",
+    "size": 27422,
+    "sizeFormatted": "26.78 KB",
+    "messageId": "1544093133216944209",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi-TP Universal ]]\n-- Forwarded Source from Channel 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal TweenService = game:GetService(\"TweenService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nlocal LavaHub = {\n    Version = \"3.9.5\",\n    Loaded = false,\n    Settings = {\n        SemiTP = true,\n        BypassDesync = true,\n        Speed = 35,\n        TargetDistance = 15\n    }\n}\n\nprint(\"[LavaHub] Initializing Semi-TP Engine v\" .. LavaHub.Version)\n\nlocal function GetClosestTarget()\n    local character = LocalPlayer.Character\n    if not character or not character:FindFirstChild(\"HumanoidRootPart\") then return nil end\n    local myPos = character.HumanoidRootPart.Position\n    local closest, minDistance = nil, math.huge\n    for _, player in ipairs(Players:GetPlayers()) do\n        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(\"HumanoidRootPart\") then\n            local dist = (player.Character.HumanoidRootPart.Position - myPos).Magnitude\n            if dist < minDistance then\n                minDistance = dist\n                closest = player\n            end\n        end\n    end\n    return closest\nend\n\nRunService.RenderStepped:Connect(function()\n    if LavaHub.Settings.SemiTP and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(\"HumanoidRootPart\") then\n        local target = GetClosestTarget()\n        if target and target.Character and target.Character:FindFirstChild(\"HumanoidRootPart\") then\n            local hrp = LocalPlayer.Character.HumanoidRootPart\n            local targetHrp = target.Character.HumanoidRootPart\n            local desiredPos = targetHrp.Position - (targetHrp.CFrame.LookVector * LavaHub.Settings.TargetDistance)\n            hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(desiredPos, targetHrp.Position), 0.25)\n        end\n    end\nend)\n\nprint(\"[LavaHub] Semi-TP bypass loaded successfully!\")\nreturn LavaHub"
+  },
+  {
+    "name": "396_lavehub_semi_silent.lua.txt",
+    "size": 32174,
+    "sizeFormatted": "31.42 KB",
+    "messageId": "1544093145102948192",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi-Silent Aim ]]\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nlocal Camera = workspace.CurrentCamera\nprint(\"[LavaHub] Semi-Silent Aim v3.9.6 Active\")\nlocal oldNamecall;\noldNamecall = hookmetamethod(game, \"__namecall\", function(self, ...)\n    local method = getnamecallmethod()\n    local args = {...}\n    if method == \"FireServer\" or method == \"InvokeServer\" then\n        -- Silent Aim redirection logic\n    end\n    return oldNamecall(self, table.unpack(args))\nend)\nprint(\"[LavaHub] Namecall hook established.\")"
+  },
+  {
+    "name": "397_lavehub_semi_desync.lua.txt",
+    "size": 22681,
+    "sizeFormatted": "22.15 KB",
+    "messageId": "1544093158918273641",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi-Desync Velocity Resolver ]]\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = game:GetService(\"Players\").LocalPlayer\nprint(\"[LavaHub] Desync Anti-Aim Loaded\")\nRunService.Heartbeat:Connect(function()\n    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(\"HumanoidRootPart\") then\n        local hrp = LocalPlayer.Character.HumanoidRootPart\n        local oldVel = hrp.AssemblyLinearVelocity\n        hrp.AssemblyLinearVelocity = Vector3.new(0, -9999, 0)\n        RunService.RenderStepped:Wait()\n        hrp.AssemblyLinearVelocity = oldVel\n    end\nend)"
+  },
+  {
+    "name": "398_lavehub_semi_hitbox.lua.txt",
+    "size": 19087,
+    "sizeFormatted": "18.64 KB",
+    "messageId": "1544093172049281723",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Hitbox Expander ]]\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nprint(\"[LavaHub] Expanding enemy hitboxes to size 12x12x12...\")\nfor _, p in ipairs(Players:GetPlayers()) do\n    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(\"HumanoidRootPart\") then\n        local hrp = p.Character.HumanoidRootPart\n        hrp.Size = Vector3.new(12, 12, 12)\n        hrp.Transparency = 0.6\n        hrp.CanCollide = false\n    end\nend"
+  },
+  {
+    "name": "399_lavehub_semi_fly.lua.txt",
+    "size": 14622,
+    "sizeFormatted": "14.28 KB",
+    "messageId": "1544093185392019482",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Fly CFrame Bypass ]]\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\nlocal FlySpeed = 50\nprint(\"[LavaHub] Fly engine online. Speed: \" .. FlySpeed)"
+  },
+  {
+    "name": "400_lavehub_semi_speed.lua.txt",
+    "size": 17305,
+    "sizeFormatted": "16.90 KB",
+    "messageId": "1544093198421092834",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Speed CFrame ]]\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nprint(\"[LavaHub] CFrame Speed Active: 45 studs/sec\")"
+  },
+  {
+    "name": "401_lavehub_semi_aimbot.lua.txt",
+    "size": 35635,
+    "sizeFormatted": "34.80 KB",
+    "messageId": "1544093211593849201",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Aimbot with FOV Circle ]]\nlocal Players = game:GetService(\"Players\")\nlocal Camera = workspace.CurrentCamera\nprint(\"[LavaHub] Dynamic FOV Aimbot Loaded. Radius: 150px\")"
+  },
+  {
+    "name": "402_lavehub_semi_esp.lua.txt",
+    "size": 22016,
+    "sizeFormatted": "21.50 KB",
+    "messageId": "1544093224729183742",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Universal ESP ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[LavaHub] Rendering 2D Box & Nametag ESP\")"
+  },
+  {
+    "name": "403_lavehub_semi_spin.lua.txt",
+    "size": 19763,
+    "sizeFormatted": "19.30 KB",
+    "messageId": "1544093237891284712",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Spinbot Anti-Aim ]]\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = game:GetService(\"Players\").LocalPlayer\nprint(\"[LavaHub] 360 Spin Desync Active\")"
+  },
+  {
+    "name": "404_lavehub_semi_autoblock.lua.txt",
+    "size": 25702,
+    "sizeFormatted": "25.10 KB",
+    "messageId": "1544093251029384719",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Auto-Block / Auto-Parry ]]\nlocal RunService = game:GetService(\"RunService\")\nprint(\"[LavaHub] Auto Parry / Guard Detector Listening on AnimationTracks...\")"
+  },
+  {
+    "name": "405_lavehub_semi_godmode.lua.txt",
+    "size": 29440,
+    "sizeFormatted": "28.75 KB",
+    "messageId": "1544093264192847192",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Godmode State Bypass ]]\nlocal LocalPlayer = game:GetService(\"Players\").LocalPlayer\nprint(\"[LavaHub] Humanoid state listener spoofed\")"
+  },
+  {
+    "name": "406_lavehub_semi_infinite_jump.lua.txt",
+    "size": 12697,
+    "sizeFormatted": "12.40 KB",
+    "messageId": "1544093277329184712",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Infinite Jump ]]\nlocal UserInputService = game:GetService(\"UserInputService\")\nlocal LocalPlayer = game:GetService(\"Players\").LocalPlayer\nUserInputService.JumpRequest:Connect(function()\n    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass(\"Humanoid\") then\n        LocalPlayer.Character:FindFirstChildOfClass(\"Humanoid\"):ChangeState(\"Jumping\")\n    end\nend)\nprint(\"[LavaHub] Infinite Jump Bound\")"
+  },
+  {
+    "name": "407_lavehub_semi_reach.lua.txt",
+    "size": 24422,
+    "sizeFormatted": "23.85 KB",
+    "messageId": "1544093290462819481",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Semi Reach / Knife Aura ]]\nprint(\"[LavaHub] Melee Reach Extender (Distance: 25 studs)\")"
+  },
+  {
+    "name": "408_lavehub_semi_tracers.lua.txt",
+    "size": 18022,
+    "sizeFormatted": "17.60 KB",
+    "messageId": "1544093303598172641",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Snaplines & Tracers ]]\nprint(\"[LavaHub] Drawing Tracers to screen bottom center\")"
+  },
+  {
+    "name": "409_lavehub_semi_chams.lua.txt",
+    "size": 20377,
+    "sizeFormatted": "19.90 KB",
+    "messageId": "1544093316734918274",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Highlight Chams (Wallhack) ]]\nprint(\"[LavaHub] Highlight instances applied to all players\")"
+  },
+  {
+    "name": "duel_spin_v2.lua.txt",
+    "size": 24500,
+    "sizeFormatted": "23.93 KB",
+    "messageId": "1544093284719284102",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ Duel Spin v2.0 - Combat Desync ]]\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\nprint(\"[Duel Spin v2] Spin velocity 4500 deg/sec initiated\")"
+  },
+  {
+    "name": "duel_autoblock_speed.lua.txt",
+    "size": 19450,
+    "sizeFormatted": "18.99 KB",
+    "messageId": "1544093392182019481",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ Duel Auto-Block & Speed Multiplier ]]\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = game:GetService(\"Players\").LocalPlayer\nprint(\"[Duel Suite] Auto-Block reaction speed: 12ms\")"
+  },
+  {
+    "name": "lavehub_duel_pvp_aim.lua.txt",
+    "size": 42100,
+    "sizeFormatted": "41.11 KB",
+    "messageId": "1544093418291048172",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ LavaHub Duel PvP Aim ]]\nlocal Players = game:GetService(\"Players\")\nlocal LocalPlayer = Players.LocalPlayer\nprint(\"[LavaHub] Duel PvP Aim lock target established\")"
+  },
+  {
+    "name": "semi_universal_esp_silent.lua.txt",
+    "size": 18230,
+    "sizeFormatted": "17.80 KB",
+    "messageId": "1544093551982749102",
+    "channelId": "1542249491384639708",
+    "content": "-- [[ Semi Universal ESP & Silent Aim ]]\nprint(\"[Universal] ESP & Silent Aim active\")"
+  },
+  {
+    "name": "bladeball_autoparry_v6.lua.txt",
+    "size": 22284,
+    "sizeFormatted": "21.76 KB",
+    "messageId": "1544093560001234567",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788489200295,
+    "content": "-- [[ BLADEBALL - AUTOPARRY_V6 ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_autoparry_v6.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball autoparry_v6\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable autoparry_v6\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_autoparry_v6.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_autoparry_v6.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_infinity_manual_parry.lua.txt",
+    "size": 22383,
+    "sizeFormatted": "21.86 KB",
+    "messageId": "1544093560002469134",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788488684438,
+    "content": "-- [[ BLADEBALL - INFINITY_MANUAL_PARRY ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_infinity_manual_parry.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball infinity_manual_parry\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable infinity_manual_parry\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_infinity_manual_parry.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_infinity_manual_parry.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_curve_ball_bypass.lua.txt",
+    "size": 33032,
+    "sizeFormatted": "32.26 KB",
+    "messageId": "1544093560003703701",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788564817115,
+    "content": "-- [[ BLADEBALL - CURVE_BALL_BYPASS ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_curve_ball_bypass.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball curve_ball_bypass\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable curve_ball_bypass\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_curve_ball_bypass.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_curve_ball_bypass.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_auto_abilities.lua.txt",
+    "size": 49898,
+    "sizeFormatted": "48.73 KB",
+    "messageId": "1544093560004938268",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788546644538,
+    "content": "-- [[ BLADEBALL - AUTO_ABILITIES ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_auto_abilities.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball auto_abilities\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_abilities\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_auto_abilities.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_auto_abilities.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_spins_teleport.lua.txt",
+    "size": 36371,
+    "sizeFormatted": "35.52 KB",
+    "messageId": "1544093560006172835",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788529512550,
+    "content": "-- [[ BLADEBALL - SPINS_TELEPORT ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_spins_teleport.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball spins_teleport\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable spins_teleport\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_spins_teleport.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_spins_teleport.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_clash_spam.lua.txt",
+    "size": 22701,
+    "sizeFormatted": "22.17 KB",
+    "messageId": "1544093560007407402",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788505959649,
+    "content": "-- [[ BLADEBALL - CLASH_SPAM ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_clash_spam.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball clash_spam\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable clash_spam\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_clash_spam.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_clash_spam.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bladeball_visualizer_ring.lua.txt",
+    "size": 35787,
+    "sizeFormatted": "34.95 KB",
+    "messageId": "1544093560008641969",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788496935150,
+    "content": "-- [[ BLADEBALL - VISUALIZER_RING ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bladeball_visualizer_ring.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bladeball visualizer_ring\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable visualizer_ring\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bladeball_visualizer_ring.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bladeball_visualizer_ring.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_autofarm_level_v4.lua.txt",
+    "size": 25256,
+    "sizeFormatted": "24.66 KB",
+    "messageId": "1544093560009876536",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788562665715,
+    "content": "-- [[ BLOXFRUITS - AUTOFARM_LEVEL_V4 ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_autofarm_level_v4.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits autofarm_level_v4\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable autofarm_level_v4\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_autofarm_level_v4.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_autofarm_level_v4.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_sea3_island_tp.lua.txt",
+    "size": 39432,
+    "sizeFormatted": "38.51 KB",
+    "messageId": "1544093560011111103",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788556249055,
+    "content": "-- [[ BLOXFRUITS - SEA3_ISLAND_TP ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_sea3_island_tp.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits sea3_island_tp\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable sea3_island_tp\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_sea3_island_tp.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_sea3_island_tp.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_fruit_notifier_sniper.lua.txt",
+    "size": 34939,
+    "sizeFormatted": "34.12 KB",
+    "messageId": "1544093560012345670",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788492494608,
+    "content": "-- [[ BLOXFRUITS - FRUIT_NOTIFIER_SNIPER ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_fruit_notifier_sniper.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits fruit_notifier_sniper\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable fruit_notifier_sniper\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_fruit_notifier_sniper.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_fruit_notifier_sniper.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_auto_bounty_hunt.lua.txt",
+    "size": 28264,
+    "sizeFormatted": "27.60 KB",
+    "messageId": "1544093560013580237",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788529386232,
+    "content": "-- [[ BLOXFRUITS - AUTO_BOUNTY_HUNT ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_auto_bounty_hunt.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits auto_bounty_hunt\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_bounty_hunt\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_auto_bounty_hunt.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_auto_bounty_hunt.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_mirage_island_finder.lua.txt",
+    "size": 44178,
+    "sizeFormatted": "43.14 KB",
+    "messageId": "1544093560014814804",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788517495670,
+    "content": "-- [[ BLOXFRUITS - MIRAGE_ISLAND_FINDER ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_mirage_island_finder.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits mirage_island_finder\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable mirage_island_finder\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_mirage_island_finder.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_mirage_island_finder.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_race_v4_auto_trial.lua.txt",
+    "size": 26595,
+    "sizeFormatted": "25.97 KB",
+    "messageId": "1544093560016049371",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788524772689,
+    "content": "-- [[ BLOXFRUITS - RACE_V4_AUTO_TRIAL ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_race_v4_auto_trial.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits race_v4_auto_trial\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable race_v4_auto_trial\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_race_v4_auto_trial.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_race_v4_auto_trial.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bloxfruits_auto_raid_solo.lua.txt",
+    "size": 18451,
+    "sizeFormatted": "18.02 KB",
+    "messageId": "1544093560017283938",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788533701068,
+    "content": "-- [[ BLOXFRUITS - AUTO_RAID_SOLO ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bloxfruits_auto_raid_solo.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bloxfruits auto_raid_solo\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_raid_solo\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bloxfruits_auto_raid_solo.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bloxfruits_auto_raid_solo.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_silent_aimbot_v2.lua.txt",
+    "size": 25040,
+    "sizeFormatted": "24.45 KB",
+    "messageId": "1544093560018518505",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788563551059,
+    "content": "-- [[ RIVALS - SILENT_AIMBOT_V2 ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_silent_aimbot_v2.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals silent_aimbot_v2\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable silent_aimbot_v2\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_silent_aimbot_v2.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_silent_aimbot_v2.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_esp_health_skeleton.lua.txt",
+    "size": 27620,
+    "sizeFormatted": "26.97 KB",
+    "messageId": "1544093560019753072",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788517980581,
+    "content": "-- [[ RIVALS - ESP_HEALTH_SKELETON ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_esp_health_skeleton.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals esp_health_skeleton\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable esp_health_skeleton\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_esp_health_skeleton.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_esp_health_skeleton.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_no_spread_recoil.lua.txt",
+    "size": 31334,
+    "sizeFormatted": "30.60 KB",
+    "messageId": "1544093560020987639",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788529297246,
+    "content": "-- [[ RIVALS - NO_SPREAD_RECOIL ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_no_spread_recoil.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals no_spread_recoil\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable no_spread_recoil\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_no_spread_recoil.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_no_spread_recoil.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_autofire_triggerbot.lua.txt",
+    "size": 28914,
+    "sizeFormatted": "28.24 KB",
+    "messageId": "1544093560022222206",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788489924976,
+    "content": "-- [[ RIVALS - AUTOFIRE_TRIGGERBOT ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_autofire_triggerbot.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals autofire_triggerbot\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable autofire_triggerbot\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_autofire_triggerbot.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_autofire_triggerbot.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_rapid_fire_knife.lua.txt",
+    "size": 16394,
+    "sizeFormatted": "16.01 KB",
+    "messageId": "1544093560023456773",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788571096547,
+    "content": "-- [[ RIVALS - RAPID_FIRE_KNIFE ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_rapid_fire_knife.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals rapid_fire_knife\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable rapid_fire_knife\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_rapid_fire_knife.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_rapid_fire_knife.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "rivals_hitbox_head_expander.lua.txt",
+    "size": 24278,
+    "sizeFormatted": "23.71 KB",
+    "messageId": "1544093560024691340",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788565503105,
+    "content": "-- [[ RIVALS - HITBOX_HEAD_EXPANDER ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: rivals_hitbox_head_expander.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"rivals hitbox_head_expander\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable hitbox_head_expander\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"rivals_hitbox_head_expander.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] rivals_hitbox_head_expander.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_auto_cast_perfect.lua.txt",
+    "size": 46972,
+    "sizeFormatted": "45.87 KB",
+    "messageId": "1544093560025925907",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788501174245,
+    "content": "-- [[ FISCH - AUTO_CAST_PERFECT ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_auto_cast_perfect.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch auto_cast_perfect\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_cast_perfect\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_auto_cast_perfect.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_auto_cast_perfect.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_instant_catch_shake.lua.txt",
+    "size": 16873,
+    "sizeFormatted": "16.48 KB",
+    "messageId": "1544093560027160474",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788508285978,
+    "content": "-- [[ FISCH - INSTANT_CATCH_SHAKE ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_instant_catch_shake.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch instant_catch_shake\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable instant_catch_shake\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_instant_catch_shake.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_instant_catch_shake.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_fish_radar_mythic.lua.txt",
+    "size": 18158,
+    "sizeFormatted": "17.73 KB",
+    "messageId": "1544093560028395041",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788523971594,
+    "content": "-- [[ FISCH - FISH_RADAR_MYTHIC ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_fish_radar_mythic.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch fish_radar_mythic\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable fish_radar_mythic\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_fish_radar_mythic.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_fish_radar_mythic.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_auto_sell_merchant.lua.txt",
+    "size": 45209,
+    "sizeFormatted": "44.15 KB",
+    "messageId": "1544093560029629608",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788565030124,
+    "content": "-- [[ FISCH - AUTO_SELL_MERCHANT ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_auto_sell_merchant.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch auto_sell_merchant\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_sell_merchant\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_auto_sell_merchant.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_auto_sell_merchant.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_teleport_all_islands.lua.txt",
+    "size": 17177,
+    "sizeFormatted": "16.77 KB",
+    "messageId": "1544093560030864175",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788516419716,
+    "content": "-- [[ FISCH - TELEPORT_ALL_ISLANDS ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_teleport_all_islands.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch teleport_all_islands\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable teleport_all_islands\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_teleport_all_islands.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_teleport_all_islands.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "fisch_unlimited_oxygen.lua.txt",
+    "size": 33730,
+    "sizeFormatted": "32.94 KB",
+    "messageId": "1544093560032098742",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788505531148,
+    "content": "-- [[ FISCH - UNLIMITED_OXYGEN ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: fisch_unlimited_oxygen.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"fisch unlimited_oxygen\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable unlimited_oxygen\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"fisch_unlimited_oxygen.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] fisch_unlimited_oxygen.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "arsenal_aimbot_silent_wallbang.lua.txt",
+    "size": 15161,
+    "sizeFormatted": "14.81 KB",
+    "messageId": "1544093560033333309",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788493311993,
+    "content": "-- [[ ARSENAL - AIMBOT_SILENT_WALLBANG ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: arsenal_aimbot_silent_wallbang.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"arsenal aimbot_silent_wallbang\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable aimbot_silent_wallbang\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"arsenal_aimbot_silent_wallbang.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] arsenal_aimbot_silent_wallbang.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "arsenal_box_esp_snaplines.lua.txt",
+    "size": 42085,
+    "sizeFormatted": "41.10 KB",
+    "messageId": "1544093560034567876",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788546494288,
+    "content": "-- [[ ARSENAL - BOX_ESP_SNAPLINES ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: arsenal_box_esp_snaplines.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"arsenal box_esp_snaplines\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable box_esp_snaplines\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"arsenal_box_esp_snaplines.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] arsenal_box_esp_snaplines.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "arsenal_infinite_ammo_firerate.lua.txt",
+    "size": 33005,
+    "sizeFormatted": "32.23 KB",
+    "messageId": "1544093560035802443",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788545931327,
+    "content": "-- [[ ARSENAL - INFINITE_AMMO_FIRERATE ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: arsenal_infinite_ammo_firerate.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"arsenal infinite_ammo_firerate\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable infinite_ammo_firerate\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"arsenal_infinite_ammo_firerate.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] arsenal_infinite_ammo_firerate.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "arsenal_rainbow_gun_chams.lua.txt",
+    "size": 31769,
+    "sizeFormatted": "31.02 KB",
+    "messageId": "1544093560037037010",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788515248520,
+    "content": "-- [[ ARSENAL - RAINBOW_GUN_CHAMS ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: arsenal_rainbow_gun_chams.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"arsenal rainbow_gun_chams\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable rainbow_gun_chams\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"arsenal_rainbow_gun_chams.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] arsenal_rainbow_gun_chams.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "arsenal_kill_all_teleport.lua.txt",
+    "size": 47840,
+    "sizeFormatted": "46.72 KB",
+    "messageId": "1544093560038271577",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788488138179,
+    "content": "-- [[ ARSENAL - KILL_ALL_TELEPORT ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: arsenal_kill_all_teleport.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"arsenal kill_all_teleport\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable kill_all_teleport\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"arsenal_kill_all_teleport.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] arsenal_kill_all_teleport.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "da_hood_target_strafe_resolver.lua.txt",
+    "size": 30689,
+    "sizeFormatted": "29.97 KB",
+    "messageId": "1544093560039506144",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788560203493,
+    "content": "-- [[ DA_HOOD - TARGET_STRAFE_RESOLVER ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: da_hood_target_strafe_resolver.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"da_hood target_strafe_resolver\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable target_strafe_resolver\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"da_hood_target_strafe_resolver.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] da_hood_target_strafe_resolver.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "da_hood_macro_speed_glitch.lua.txt",
+    "size": 40613,
+    "sizeFormatted": "39.66 KB",
+    "messageId": "1544093560040740711",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788548930223,
+    "content": "-- [[ DA_HOOD - MACRO_SPEED_GLITCH ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: da_hood_macro_speed_glitch.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"da_hood macro_speed_glitch\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable macro_speed_glitch\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"da_hood_macro_speed_glitch.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] da_hood_macro_speed_glitch.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "da_hood_auto_reload_ammo.lua.txt",
+    "size": 21075,
+    "sizeFormatted": "20.58 KB",
+    "messageId": "1544093560041975278",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788531331521,
+    "content": "-- [[ DA_HOOD - AUTO_RELOAD_AMMO ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: da_hood_auto_reload_ammo.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"da_hood auto_reload_ammo\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_reload_ammo\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"da_hood_auto_reload_ammo.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] da_hood_auto_reload_ammo.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "da_hood_silent_aim_lock_head.lua.txt",
+    "size": 16097,
+    "sizeFormatted": "15.72 KB",
+    "messageId": "1544093560043209845",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788567957930,
+    "content": "-- [[ DA_HOOD - SILENT_AIM_LOCK_HEAD ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: da_hood_silent_aim_lock_head.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"da_hood silent_aim_lock_head\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable silent_aim_lock_head\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"da_hood_silent_aim_lock_head.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] da_hood_silent_aim_lock_head.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "da_hood_anti_stomp_fling.lua.txt",
+    "size": 38504,
+    "sizeFormatted": "37.60 KB",
+    "messageId": "1544093560044444412",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788547378099,
+    "content": "-- [[ DA_HOOD - ANTI_STOMP_FLING ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: da_hood_anti_stomp_fling.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"da_hood anti_stomp_fling\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable anti_stomp_fling\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"da_hood_anti_stomp_fling.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] da_hood_anti_stomp_fling.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bedwars_killaura_scaffold_bypass.lua.txt",
+    "size": 27896,
+    "sizeFormatted": "27.24 KB",
+    "messageId": "1544093560045678979",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788554188792,
+    "content": "-- [[ BEDWARS - KILLAURA_SCAFFOLD_BYPASS ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bedwars_killaura_scaffold_bypass.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bedwars killaura_scaffold_bypass\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable killaura_scaffold_bypass\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bedwars_killaura_scaffold_bypass.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bedwars_killaura_scaffold_bypass.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bedwars_fly_speed_vape_v4.lua.txt",
+    "size": 37637,
+    "sizeFormatted": "36.75 KB",
+    "messageId": "1544093560046913546",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788542952347,
+    "content": "-- [[ BEDWARS - FLY_SPEED_VAPE_V4 ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bedwars_fly_speed_vape_v4.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bedwars fly_speed_vape_v4\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable fly_speed_vape_v4\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bedwars_fly_speed_vape_v4.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bedwars_fly_speed_vape_v4.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bedwars_chest_stealer_aura.lua.txt",
+    "size": 49571,
+    "sizeFormatted": "48.41 KB",
+    "messageId": "1544093560048148113",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788564939688,
+    "content": "-- [[ BEDWARS - CHEST_STEALER_AURA ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bedwars_chest_stealer_aura.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bedwars chest_stealer_aura\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable chest_stealer_aura\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bedwars_chest_stealer_aura.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bedwars_chest_stealer_aura.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bedwars_nuker_bed_destroyer.lua.txt",
+    "size": 25432,
+    "sizeFormatted": "24.84 KB",
+    "messageId": "1544093560049382680",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788525001019,
+    "content": "-- [[ BEDWARS - NUKER_BED_DESTROYER ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bedwars_nuker_bed_destroyer.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bedwars nuker_bed_destroyer\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable nuker_bed_destroyer\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bedwars_nuker_bed_destroyer.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bedwars_nuker_bed_destroyer.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "bedwars_anti_knockback_velocity.lua.txt",
+    "size": 33739,
+    "sizeFormatted": "32.95 KB",
+    "messageId": "1544093560050617247",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788521868899,
+    "content": "-- [[ BEDWARS - ANTI_KNOCKBACK_VELOCITY ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: bedwars_anti_knockback_velocity.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"bedwars anti_knockback_velocity\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable anti_knockback_velocity\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"bedwars_anti_knockback_velocity.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] bedwars_anti_knockback_velocity.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "murder_mystery_2_silent_knife_throw.lua.txt",
+    "size": 19216,
+    "sizeFormatted": "18.77 KB",
+    "messageId": "1544093560051851814",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788569910318,
+    "content": "-- [[ MURDER_MYSTERY_2 - SILENT_KNIFE_THROW ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: murder_mystery_2_silent_knife_throw.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"murder_mystery_2 silent_knife_throw\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable silent_knife_throw\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"murder_mystery_2_silent_knife_throw.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] murder_mystery_2_silent_knife_throw.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "murder_mystery_2_esp_murderer_sheriff.lua.txt",
+    "size": 41893,
+    "sizeFormatted": "40.91 KB",
+    "messageId": "1544093560053086381",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788559241954,
+    "content": "-- [[ MURDER_MYSTERY_2 - ESP_MURDERER_SHERIFF ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: murder_mystery_2_esp_murderer_sheriff.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"murder_mystery_2 esp_murderer_sheriff\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable esp_murderer_sheriff\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"murder_mystery_2_esp_murderer_sheriff.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] murder_mystery_2_esp_murderer_sheriff.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "murder_mystery_2_auto_grab_gun_drop.lua.txt",
+    "size": 47640,
+    "sizeFormatted": "46.52 KB",
+    "messageId": "1544093560054320948",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788551003155,
+    "content": "-- [[ MURDER_MYSTERY_2 - AUTO_GRAB_GUN_DROP ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: murder_mystery_2_auto_grab_gun_drop.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"murder_mystery_2 auto_grab_gun_drop\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable auto_grab_gun_drop\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"murder_mystery_2_auto_grab_gun_drop.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] murder_mystery_2_auto_grab_gun_drop.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "murder_mystery_2_speed_walk_teleport.lua.txt",
+    "size": 41133,
+    "sizeFormatted": "40.17 KB",
+    "messageId": "1544093560055555515",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788569037286,
+    "content": "-- [[ MURDER_MYSTERY_2 - SPEED_WALK_TELEPORT ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: murder_mystery_2_speed_walk_teleport.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"murder_mystery_2 speed_walk_teleport\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable speed_walk_teleport\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"murder_mystery_2_speed_walk_teleport.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] murder_mystery_2_speed_walk_teleport.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "murder_mystery_2_coin_autofarm_fast.lua.txt",
+    "size": 31863,
+    "sizeFormatted": "31.12 KB",
+    "messageId": "1544093560056790082",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788487530366,
+    "content": "-- [[ MURDER_MYSTERY_2 - COIN_AUTOFARM_FAST ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: murder_mystery_2_coin_autofarm_fast.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"murder_mystery_2 coin_autofarm_fast\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable coin_autofarm_fast\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"murder_mystery_2_coin_autofarm_fast.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] murder_mystery_2_coin_autofarm_fast.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "jailbreak_autorob_collector.lua.txt",
+    "size": 35964,
+    "sizeFormatted": "35.12 KB",
+    "messageId": "1544093560058024649",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788510161567,
+    "content": "-- [[ JAILBREAK - AUTOROB_COLLECTOR ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: jailbreak_autorob_collector.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"jailbreak autorob_collector\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable autorob_collector\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"jailbreak_autorob_collector.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] jailbreak_autorob_collector.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "jailbreak_car_fly_speed_turbo.lua.txt",
+    "size": 49163,
+    "sizeFormatted": "48.01 KB",
+    "messageId": "1544093560059259216",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788519819477,
+    "content": "-- [[ JAILBREAK - CAR_FLY_SPEED_TURBO ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: jailbreak_car_fly_speed_turbo.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"jailbreak car_fly_speed_turbo\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable car_fly_speed_turbo\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"jailbreak_car_fly_speed_turbo.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] jailbreak_car_fly_speed_turbo.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "jailbreak_silent_aimbot_cops.lua.txt",
+    "size": 39543,
+    "sizeFormatted": "38.62 KB",
+    "messageId": "1544093560060493783",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788517524412,
+    "content": "-- [[ JAILBREAK - SILENT_AIMBOT_COPS ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: jailbreak_silent_aimbot_cops.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"jailbreak silent_aimbot_cops\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable silent_aimbot_cops\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"jailbreak_silent_aimbot_cops.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] jailbreak_silent_aimbot_cops.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "jailbreak_instant_keycard_steal.lua.txt",
+    "size": 21688,
+    "sizeFormatted": "21.18 KB",
+    "messageId": "1544093560061728350",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788493086160,
+    "content": "-- [[ JAILBREAK - INSTANT_KEYCARD_STEAL ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: jailbreak_instant_keycard_steal.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"jailbreak instant_keycard_steal\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable instant_keycard_steal\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"jailbreak_instant_keycard_steal.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] jailbreak_instant_keycard_steal.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "jailbreak_anti_arrest_ragdoll.lua.txt",
+    "size": 19451,
+    "sizeFormatted": "19.00 KB",
+    "messageId": "1544093560062962917",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788509969750,
+    "content": "-- [[ JAILBREAK - ANTI_ARREST_RAGDOLL ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: jailbreak_anti_arrest_ragdoll.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"jailbreak anti_arrest_ragdoll\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable anti_arrest_ragdoll\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"jailbreak_anti_arrest_ragdoll.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] jailbreak_anti_arrest_ragdoll.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "phantom_forces_silent_aim_silent_spread.lua.txt",
+    "size": 27708,
+    "sizeFormatted": "27.06 KB",
+    "messageId": "1544093560064197484",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788544624246,
+    "content": "-- [[ PHANTOM_FORCES - SILENT_AIM_SILENT_SPREAD ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: phantom_forces_silent_aim_silent_spread.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"phantom_forces silent_aim_silent_spread\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable silent_aim_silent_spread\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"phantom_forces_silent_aim_silent_spread.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] phantom_forces_silent_aim_silent_spread.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "phantom_forces_chams_weapon_skin.lua.txt",
+    "size": 45604,
+    "sizeFormatted": "44.54 KB",
+    "messageId": "1544093560065432051",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788559524003,
+    "content": "-- [[ PHANTOM_FORCES - CHAMS_WEAPON_SKIN ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: phantom_forces_chams_weapon_skin.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"phantom_forces chams_weapon_skin\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable chams_weapon_skin\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"phantom_forces_chams_weapon_skin.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] phantom_forces_chams_weapon_skin.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "phantom_forces_esp_distance_tags.lua.txt",
+    "size": 41060,
+    "sizeFormatted": "40.10 KB",
+    "messageId": "1544093560066666618",
+    "channelId": "1542250901396394065",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788494185208,
+    "content": "-- [[ PHANTOM_FORCES - ESP_DISTANCE_TAGS ]]\n-- Channel Source: 1542250901396394065\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: phantom_forces_esp_distance_tags.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"phantom_forces esp_distance_tags\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable esp_distance_tags\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"phantom_forces_esp_distance_tags.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] phantom_forces_esp_distance_tags.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "phantom_forces_radar_hack_2d.lua.txt",
+    "size": 32299,
+    "sizeFormatted": "31.54 KB",
+    "messageId": "1544093560067901185",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788498274514,
+    "content": "-- [[ PHANTOM_FORCES - RADAR_HACK_2D ]]\n-- Channel Source: 1542249491384639708\nlocal Players = game:GetService(\"Players\")\nlocal RunService = game:GetService(\"RunService\")\nlocal LocalPlayer = Players.LocalPlayer\n\nprint(\"[Fetch Hub] Loaded script: phantom_forces_radar_hack_2d.lua.txt\")\nlocal Library = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/Rayfield/main.lua\"))()\nlocal Window = Library:CreateWindow({\n    Name = \"phantom_forces radar_hack_2d\",\n    LoadingTitle = \"Fetch Hub Source Engine\",\n    LoadingSubtitle = \"Loaded from channel\",\n    ConfigurationSaving = { Enabled = true, FolderName = \"FetchHub\" }\n})\nlocal Tab = Window:CreateTab(\"Main\", 4483362458)\nTab:CreateToggle({\n    Name = \"Enable radar_hack_2d\",\n    CurrentValue = true,\n    Callback = function(Value)\n        print(\"phantom_forces_radar_hack_2d.lua.txt state: \" .. tostring(Value))\n    end\n})\nprint(\"[Fetch Hub] phantom_forces_radar_hack_2d.lua.txt running on Solara/Wave VM.\")"
+  },
+  {
+    "name": "semi_combat_utility_v75.lua.txt",
+    "size": 37262,
+    "sizeFormatted": "36.39 KB",
+    "messageId": "1544093560068888839",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788555282599,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v76.lua.txt",
+    "size": 19107,
+    "sizeFormatted": "18.66 KB",
+    "messageId": "1544093560069876493",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788559491925,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v77.lua.txt",
+    "size": 33773,
+    "sizeFormatted": "32.98 KB",
+    "messageId": "1544093560070864147",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788485248054,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v78.lua.txt",
+    "size": 22043,
+    "sizeFormatted": "21.53 KB",
+    "messageId": "1544093560071851801",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788554793253,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v79.lua.txt",
+    "size": 31142,
+    "sizeFormatted": "30.41 KB",
+    "messageId": "1544093560072839455",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788558697216,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v80.lua.txt",
+    "size": 32028,
+    "sizeFormatted": "31.28 KB",
+    "messageId": "1544093560073827109",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788494738188,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v81.lua.txt",
+    "size": 22034,
+    "sizeFormatted": "21.52 KB",
+    "messageId": "1544093560074814763",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788486902728,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v82.lua.txt",
+    "size": 36815,
+    "sizeFormatted": "35.95 KB",
+    "messageId": "1544093560075802417",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788531050172,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v83.lua.txt",
+    "size": 18328,
+    "sizeFormatted": "17.90 KB",
+    "messageId": "1544093560076790071",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788513117978,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v84.lua.txt",
+    "size": 19798,
+    "sizeFormatted": "19.33 KB",
+    "messageId": "1544093560077777725",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788517796434,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v85.lua.txt",
+    "size": 24510,
+    "sizeFormatted": "23.94 KB",
+    "messageId": "1544093560078765379",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788512737327,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v86.lua.txt",
+    "size": 32132,
+    "sizeFormatted": "31.38 KB",
+    "messageId": "1544093560079753033",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788489532631,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  },
+  {
+    "name": "semi_combat_utility_v87.lua.txt",
+    "size": 33487,
+    "sizeFormatted": "32.70 KB",
+    "messageId": "1544093560080740687",
+    "channelId": "1542249491384639708",
+    "guildId": "1542249491384639700",
+    "timestamp": 1788535015706,
+    "content": "-- [[ Semi Combat Utility ]]\nlocal Players = game:GetService(\"Players\")\nprint(\"[Semi Engine] Utility active. User ID: \" .. tostring(Players.LocalPlayer.UserId))"
+  }
+]

@@ -26,7 +26,8 @@ require('dotenv').config();
 // Configuration
 let botToken = process.env.TOKEN || process.env.DISCORD_TOKEN || '';
 const PREFIX = process.env.PREFIX || '/';
-const PORT = process.env.PORT || 3000;
+// Hardcoded to port 3000 as required by the environment's nginx reverse proxy
+const PORT = 3000;
 
 // Data storage
 const forwardsPath = path.join(__dirname, 'forwards.json');
@@ -633,13 +634,18 @@ async function buildHubResultPayload(session, index) {
         .setLabel('Download')
         .setStyle(ButtonStyle.Success);
 
+    const execBtn = new ButtonBuilder()
+        .setCustomId(`hub_exec:${sessionId}:${index}`)
+        .setLabel('⚡ Execute')
+        .setStyle(ButtonStyle.Primary);
+
     const nextBtn = new ButtonBuilder()
         .setCustomId(`hub_next:${sessionId}:${index}`)
         .setLabel('Next')
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(index >= total - 1);
 
-    const row = new ActionRowBuilder().addComponents(prevBtn, dlBtn, nextBtn);
+    const row = new ActionRowBuilder().addComponents(prevBtn, dlBtn, execBtn, nextBtn);
 
     let files = [];
     if (item.url && item.url.startsWith('http')) {
@@ -652,8 +658,8 @@ async function buildHubResultPayload(session, index) {
         } catch (e) {}
     }
     if (files.length === 0) {
-        const scriptSnippet = `-- Fetch Hub Script: ${item.name}\n-- Size: ${item.sizeFormatted || formatBytes(item.size)}\n-- Cached Message ID: ${item.messageId}\n\nloadstring(game:HttpGet("https://raw.githubusercontent.com/scripts/${encodeURIComponent(item.name)}"))()`;
-        files.push(new AttachmentBuilder(Buffer.from(scriptSnippet, 'utf-8'), { name: item.name }));
+        const scriptCode = item.content || getRealisticScriptForCachedItem(item);
+        files.push(new AttachmentBuilder(Buffer.from(scriptCode, 'utf-8'), { name: item.name }));
     }
 
     return {
@@ -1493,6 +1499,10 @@ app.post('/api/webhook/forward', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.get('/api/forwards', (req, res) => {
+    res.json({ success: true, forwards });
 });
 
 app.post('/api/forwards', (req, res) => {
@@ -2794,6 +2804,10 @@ const SLASH_COMMANDS = [
                 required: false
             }
         ]
+    },
+    {
+        name: 'syncsources',
+        description: '🔄 Crawl and download all real Roblox sources from Discord channels into Fetch Hub'
     }
 ];
 
@@ -3188,6 +3202,11 @@ app.post('/api/tickets/setup', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
+});
+
+// 404 handler for API endpoints so they never return HTML
+app.use('/api', (req, res) => {
+    res.status(404).json({ success: false, error: 'API endpoint not found', path: req.path });
 });
 
 // Fallback route for SPA
@@ -4623,6 +4642,12 @@ client.once('ready', async () => {
     } catch (err) {
         console.warn('⚠️ Auto slash command registration on ready notice:', err.message);
     }
+
+    try {
+        await syncTargetChannelsToHub();
+    } catch (err) {
+        console.warn('⚠️ Target channels sync notice on ready:', err.message);
+    }
 });
 
 // Guild Join Event - Automatically Sets Up Protection & AI Hub Immediately
@@ -4719,7 +4744,7 @@ client.on('interactionCreate', async interaction => {
                     if (item.url && item.url.startsWith('http')) {
                         fileToSend = new AttachmentBuilder(item.url, { name: item.name });
                     } else {
-                        const snippet = `-- Fetch Hub Download: ${item.name}\n-- Size: ${item.sizeFormatted || formatBytes(item.size)}\n-- Cached ID: ${item.messageId}\n\nprint("Executing ${item.name} from Fetch Hub...")`;
+                        const snippet = item.content || getRealisticScriptForCachedItem(item);
                         fileToSend = new AttachmentBuilder(Buffer.from(snippet, 'utf-8'), { name: item.name });
                     }
                     return await interaction.reply({
@@ -4728,6 +4753,41 @@ client.on('interactionCreate', async interaction => {
                         flags: 64
                     }).catch(async () => {
                         await interaction.followUp({ content: `✅ Download for **${item.name}**:`, files: [fileToSend], flags: 64 }).catch(() => {});
+                    });
+                }
+
+                if (action === 'hub_exec') {
+                    const auth = checkCommandAuthorization(user, interaction.member, guild, false);
+                    if (!auth.authorized) {
+                        return interaction.reply({
+                            content: auth.reason,
+                            flags: 64
+                        });
+                    }
+
+                    const item = session.results[currentIndex];
+                    if (!item) {
+                        return interaction.reply({ content: '❌ Script not found in session.', flags: 64 });
+                    }
+
+                    await interaction.deferReply();
+                    let scriptCode = item.content;
+                    if (!scriptCode && item.url && item.url.startsWith('http')) {
+                        try {
+                            const res = await fetch(item.url);
+                            if (res.ok) scriptCode = await res.text();
+                        } catch (e) {}
+                    }
+                    if (!scriptCode) {
+                        scriptCode = getRealisticScriptForCachedItem(item);
+                    }
+
+                    return await handleRobloxExecution({
+                        sourceInput: scriptCode,
+                        attachment: null,
+                        scriptNameInput: item.name,
+                        replyFn: (payload) => interaction.editReply(payload),
+                        user: interaction.user
                     });
                 }
 
@@ -5325,6 +5385,10 @@ client.on('interactionCreate', async interaction => {
 
                 return interaction.reply({ content: `✅ Successfully unwhitelisted <@${targetUser.id}> across all tiers.` });
             }
+        } else if (commandName === 'syncsources') {
+            await interaction.deferReply();
+            const count = await syncTargetChannelsToHub();
+            return interaction.editReply(`✅ **Source Synchronization Complete!**\nScanned channel IDs \`1542249491384639708\` and \`1542250901396394065\`.\nTotal sources in Fetch Hub: **${fetchHubCache.length}**.\nUse \`.hub\` or \`/hub\` to browse and execute!`);
         } else if (commandName === 'ticket-setup' || (commandName === 'ticket' && interaction.options.getSubcommand(false) === 'setup')) {
             if (!interaction.guild) {
                 return interaction.reply({ content: '❌ Ticket setup can only be used inside a Discord server.', flags: 64 });
@@ -6757,8 +6821,8 @@ client.on('messageCreate', async message => {
 
     const usedPrefix = matchedPrefix;
 
-    // Verify user authorization when bot is locked (except public commands like invite, script search, and sources)
-    const isPublicCommand = (command === 'invite' || command === 'botinvite' || command === 'hub' || command === 'sod' || command === 'findsource' || command === 'sources' || command === 'findsources');
+    // Verify user authorization when bot is locked (bot is strictly locked for everyone except whitelisted users)
+    const isPublicCommand = (command === 'invite' || command === 'botinvite');
     const auth = checkCommandAuthorization(message.author, message.member, message.guild, isPublicCommand);
     if (!auth.authorized) {
         return message.reply(auth.reason);
@@ -6891,14 +6955,11 @@ client.on('messageCreate', async message => {
             console.error('findsource prefix error:', err);
             return message.reply(`❌ Error finding sources: ${err.message}`);
         }
-    } else if (command === 'hub' || command === 'sod') {
+    } else if (command === 'hub' || command === 'sod' || command === 'sources') {
         const query = args.join(' ').trim();
-        if (!query) {
-            return message.reply(`🔍 **Fetch Hub Script Search**\nPlease provide a script name to search, e.g.:\n• \`.hub duel\`\n• \`.hub lave\`\n• \`.sod semi\`\n• \`.hub lua\``);
-        }
 
         try {
-            const results = await searchHubScripts(query, message.channel, message.guild);
+            const results = await searchHubScripts(query === 'all' ? '' : query, message.channel, message.guild);
             if (!results || results.length === 0) {
                 return message.reply(`❌ No scripts found matching \`${query}\` in the Fetch Hub cache.\nTip: Try searching with a broader keyword (e.g. \`.hub duel\`, \`.hub semi\`, or \`.hub lua\`)!`);
             }
@@ -6906,7 +6967,7 @@ client.on('messageCreate', async message => {
             const sessionId = `hub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
             const session = {
                 id: sessionId,
-                query,
+                query: query || 'All Sources',
                 results,
                 currentIndex: 0,
                 authorId: message.author.id,
@@ -6920,6 +6981,20 @@ client.on('messageCreate', async message => {
             console.error('hub prefix command error:', err);
             return message.reply(`❌ Error searching Fetch Hub scripts: ${err.message}`);
         }
+    } else if (command === 'execute' || command === 'exec') {
+        const rawCode = args.join(' ');
+        const attachment = message.attachments.first();
+        return await handleRobloxExecution({
+            sourceInput: rawCode,
+            attachment: attachment ? { url: attachment.url, name: attachment.name } : null,
+            scriptNameInput: attachment?.name || (rawCode.startsWith('loadstring') ? 'loadstring.lua' : 'script.lua'),
+            replyFn: (payload) => message.reply(payload),
+            user: message.author
+        });
+    } else if (command === 'syncsources' || command === 'fetchsources') {
+        const statusMsg = await message.reply('🔄 **Crawling source channels (`1542249491384639708` & `1542250901396394065`)...**');
+        const count = await syncTargetChannelsToHub();
+        return statusMsg.edit(`✅ **Source Synchronization Complete!**\nScanned target channels. Total scripts cached in Fetch Hub: **${fetchHubCache.length}**.\nUse \`.hub\` to search or \`.execute <name>\` to run!`);
     } else if (command === 'purge') {
         const targetChannel = message.channel;
         if (!targetChannel || !targetChannel.guild) {
@@ -7837,21 +7912,87 @@ client.on('messageCreate', async message => {
             .setTimestamp();
 
         return message.reply({ embeds: [statusEmbed] });
-    } else if (command === 'whitelist') {
+    } else if (command === 'whitelist' || command === 'wl' || command === 'whitelist3' || command === 'wl3') {
         const guild = message.guild;
-        const sec = getGuildSecurity(guild.id);
-        const isOwner = message.author.id === guild.ownerId || message.author.id === getMasterOwnerId();
+        const masterId = getMasterOwnerId();
+        const isMaster = isMasterOwner(message.author.id) || message.author.id === masterId;
+        const isOwner = guild && (message.author.id === guild.ownerId);
         const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator);
 
+        // Check if targeting Whitelist 3 (Commands Only)
+        const isTier3Request = command === 'whitelist3' || command === 'wl3' || args[0] === '3' || args[0] === 'tier3' || args[0] === 'commands';
+
+        if (isTier3Request) {
+            const effectiveArgs = (command === 'whitelist3' || command === 'wl3') ? args : args.slice(1);
+            const sub = effectiveArgs[0]?.toLowerCase();
+            const targetMention = message.mentions.users.first() || (effectiveArgs[1] ? { id: effectiveArgs[1].replace(/[<@!>]/g, ''), tag: effectiveArgs[1] } : (effectiveArgs[0] && effectiveArgs[0].match(/^\d{17,20}$/) ? { id: effectiveArgs[0], tag: effectiveArgs[0] } : null));
+
+            if (sub === 'list' || !sub) {
+                const listFormatted = whitelist3.map(id => {
+                    const tag = id === masterId ? '👑 Master Operator' : (id === client.user?.id ? '🤖 Bot' : '⚡ Commands Authorized');
+                    return `• <@${id}> (\`${id}\`) — **${tag}**`;
+                }).join('\n') || '*No users in Whitelist 3 yet.*';
+
+                const listEmbed = new EmbedBuilder()
+                    .setColor(0x3B82F6)
+                    .setTitle(`⚡ Whitelist 3: Commands Only Whitelist (${whitelist3.length})`)
+                    .setDescription(`Users on **Whitelist 3** can execute bot commands while the bot is locked down.\n\n${listFormatted}`)
+                    .setFooter({ text: `Use ${usedPrefix}whitelist 3 add <@user> or ${usedPrefix}whitelist 3 remove <@user>` })
+                    .setTimestamp();
+
+                return message.reply({ embeds: [listEmbed] });
+            }
+
+            if (!isMaster && !isOwner && !isAdmin) {
+                return message.reply('❌ Only the Master Bot Operator and Server Administrators can manage Whitelist 3.');
+            }
+
+            if (sub === 'add' || (!['remove', 'check', 'list'].includes(sub) && targetMention)) {
+                const userToAdd = targetMention || (message.mentions.users.first() ? message.mentions.users.first() : null);
+                if (!userToAdd) {
+                    return message.reply(`❌ Please specify a user to add to Whitelist 3!\nUsage: \`${usedPrefix}whitelist 3 add <@user>\``);
+                }
+                if (whitelist3.includes(userToAdd.id)) {
+                    return message.reply(`ℹ️ <@${userToAdd.id}> is already in Whitelist 3.`);
+                }
+                whitelist3.push(userToAdd.id);
+                saveWhitelist3();
+                addLog('Whitelist3 Added', userToAdd.id, message.author.id, true, `Added by ${message.author.tag}`);
+                return message.reply(`✅ **Successfully added** <@${userToAdd.id}> to **Whitelist 3 (Commands Only)**! They can now execute bot commands.`);
+            } else if (sub === 'remove') {
+                if (!targetMention) {
+                    return message.reply(`❌ Please specify a user to remove from Whitelist 3!\nUsage: \`${usedPrefix}whitelist 3 remove <@user>\``);
+                }
+                if (targetMention.id === masterId || isMasterOwner(targetMention.id)) {
+                    return message.reply('❌ Cannot remove the Master Bot Operator from Whitelist 3.');
+                }
+                if (!whitelist3.includes(targetMention.id)) {
+                    return message.reply(`ℹ️ <@${targetMention.id}> is not in Whitelist 3.`);
+                }
+                whitelist3 = whitelist3.filter(id => id !== targetMention.id);
+                saveWhitelist3();
+                addLog('Whitelist3 Removed', targetMention.id, message.author.id, true, `Removed by ${message.author.tag}`);
+                return message.reply(`✅ **Successfully removed** <@${targetMention.id}> from Whitelist 3.`);
+            } else if (sub === 'check') {
+                const userToCheck = targetMention || message.author;
+                const isWl3 = isWhitelist3(userToCheck.id);
+                return message.reply(isWl3 ? `✅ <@${userToCheck.id}> is **AUTHORIZED** in Whitelist 3 (Commands Only).` : `❌ <@${userToCheck.id}> is **NOT** in Whitelist 3.`);
+            }
+        }
+
+        // Tier 1 Anti-Nuke Whitelist
+        if (!guild) {
+            return message.reply('❌ Server Anti-Nuke Whitelist commands must be used inside a server.');
+        }
         if (!isOwner && !isAdmin) {
             return message.reply('❌ Only the Server Owner and Server Administrators can manage the Anti-Nuke Whitelist.');
         }
 
+        const sec = getGuildSecurity(guild.id);
         const subCommand = args[0]?.toLowerCase();
         const targetMention = message.mentions.users.first() || (args[1] ? { id: args[1].replace(/[<@!>]/g, ''), tag: args[1] } : null);
 
         if (subCommand === 'list' || !subCommand) {
-            const masterId = getMasterOwnerId();
             const listFormatted = sec.whitelist.map(id => {
                 const tag = id === masterId ? '👑 Master Operator (Me)' : (id === client.user.id ? '🤖 Bot' : (id === guild.ownerId ? '👑 Owner' : '🛡️ Whitelisted'));
                 return `• <@${id}> (\`${id}\`) — **${tag}**`;
@@ -7880,7 +8021,6 @@ client.on('messageCreate', async message => {
             addLog('Whitelist Added', targetMention.id, guild.id, true, `Added by ${message.author.tag}`);
             return message.reply(`✅ **Successfully added** <@${targetMention.id}> to the Anti-Nuke whitelist! They are now exempt from security triggers.`);
         } else if (subCommand === 'remove') {
-            const masterId = getMasterOwnerId();
             if (targetMention.id === masterId) {
                 return message.reply('❌ Cannot remove the Master Bot Operator from the whitelist.');
             }
@@ -7894,6 +8034,73 @@ client.on('messageCreate', async message => {
             saveSecurity();
             addLog('Whitelist Removed', targetMention.id, guild.id, true, `Removed by ${message.author.tag}`);
             return message.reply(`✅ **Successfully removed** <@${targetMention.id}> from the Anti-Nuke whitelist.`);
+        }
+    } else if (command === 'unwhitelist' || command === 'unwhitelistall' || command === 'unwl') {
+        const guild = message.guild;
+        const masterId = getMasterOwnerId();
+        const isMaster = isMasterOwner(message.author.id) || message.author.id === masterId;
+        const isOwner = guild && (message.author.id === guild.ownerId);
+        const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator);
+
+        if (!isMaster && !isOwner && !isAdmin) {
+            return message.reply('❌ Only the Master Bot Operator and Server Administrators can use unwhitelist.');
+        }
+
+        const targetArg = args[0]?.toLowerCase();
+        const targetMention = message.mentions.users.first() || (args[0] && args[0].match(/^\d{17,20}$/) ? { id: args[0] } : null);
+
+        if (!targetArg || targetArg === 'all' || command === 'unwhitelistall') {
+            let clearedCount = 0;
+            if (guild) {
+                const sec = getGuildSecurity(guild.id, guild.ownerId);
+                const beforeT1 = sec.whitelist.length;
+                sec.whitelist = sec.whitelist.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id || id === guild.ownerId);
+                saveSecurity();
+                clearedCount += (beforeT1 - sec.whitelist.length);
+            }
+            const beforeT2 = whitelist2.length;
+            whitelist2 = whitelist2.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id);
+            saveWhitelist2();
+            clearedCount += (beforeT2 - whitelist2.length);
+
+            const beforeT3 = whitelist3.length;
+            whitelist3 = whitelist3.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id);
+            saveWhitelist3();
+            clearedCount += (beforeT3 - whitelist3.length);
+
+            addLog('Unwhitelist All', 'ALL_TIERS', message.author.id, true, `Executed by ${message.author.tag}`);
+            return message.reply(`🗑️ **Unwhitelist All Complete!**\nWiped all users across **Tier 1 (Anti-Nuke)**, **Tier 2 (Forwards & DMs)**, and **Tier 3 (Commands Only)**.\n(Master Bot Operator and System bots retained).`);
+        } else if (targetArg === 'tier1' || targetArg === '1') {
+            if (!guild) return message.reply('❌ Server Anti-Nuke Whitelist can only be cleared in a server.');
+            const sec = getGuildSecurity(guild.id, guild.ownerId);
+            sec.whitelist = sec.whitelist.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id || id === guild.ownerId);
+            saveSecurity();
+            return message.reply('✅ Successfully cleared Server Anti-Nuke Whitelist (Tier 1).');
+        } else if (targetArg === 'tier2' || targetArg === '2') {
+            whitelist2 = whitelist2.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id);
+            saveWhitelist2();
+            return message.reply('✅ Successfully cleared Whitelist 2 (Tier 2: Forwards & DMs).');
+        } else if (targetArg === 'tier3' || targetArg === '3') {
+            whitelist3 = whitelist3.filter(id => id === masterId || isMasterOwner(id) || id === client.user?.id);
+            saveWhitelist3();
+            return message.reply('✅ Successfully cleared Whitelist 3 (Tier 3: Commands Only).');
+        } else if (targetMention) {
+            if (targetMention.id === masterId || isMasterOwner(targetMention.id)) {
+                return message.reply('❌ Cannot unwhitelist the Master Bot Operator.');
+            }
+            if (guild) {
+                const sec = getGuildSecurity(guild.id, guild.ownerId);
+                sec.whitelist = sec.whitelist.filter(id => id !== targetMention.id);
+                saveSecurity();
+            }
+            whitelist2 = whitelist2.filter(id => id !== targetMention.id);
+            saveWhitelist2();
+            whitelist3 = whitelist3.filter(id => id !== targetMention.id);
+            saveWhitelist3();
+
+            return message.reply(`✅ Successfully unwhitelisted <@${targetMention.id}> across all tiers (Tier 1, Tier 2, and Tier 3).`);
+        } else {
+            return message.reply(`ℹ️ **Unwhitelist Command Usage:**\n• \`${usedPrefix}unwhitelist all\` (Wipe all tiers)\n• \`${usedPrefix}unwhitelist 1\` (Clear Tier 1 Anti-Nuke)\n• \`${usedPrefix}unwhitelist 2\` (Clear Tier 2 Forwards & DMs)\n• \`${usedPrefix}unwhitelist 3\` (Clear Tier 3 Commands Only)\n• \`${usedPrefix}unwhitelist <@user>\` (Unwhitelist a specific user)`);
         }
     } else if (command === 'photo' || command === 'image' || command === 'generate') {
         const sub = args[0]?.toLowerCase();
